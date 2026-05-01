@@ -53,21 +53,24 @@ export async function GET(request: NextRequest) {
       db.hotel.count({ where }),
     ]);
 
-    // Calculate average rating for each hotel
-    const hotelsWithAvg = await Promise.all(
-      hotels.map(async (hotel) => {
-        const avgResult = await db.hotelReview.aggregate({
-          where: { hotelId: hotel.id },
-          _avg: { rating: true },
-        });
-        return {
-          ...hotel,
-          averageRating: avgResult._avg.rating
-            ? Math.round(avgResult._avg.rating * 10) / 10
-            : null,
-        };
-      })
+    // Optimized: Fetch all ratings in ONE query instead of N queries
+    const hotelIds = hotels.map((h) => h.id);
+    const ratings = await db.hotelReview.groupBy({
+      by: ['hotelId'],
+      where: { hotelId: { in: hotelIds } },
+      _avg: { rating: true },
+    });
+
+    const ratingsMap = new Map(
+      ratings.map((r) => [r.hotelId, r._avg.rating])
     );
+
+    const hotelsWithAvg = hotels.map((hotel) => ({
+      ...hotel,
+      averageRating: ratingsMap.get(hotel.id)
+        ? Math.round((ratingsMap.get(hotel.id) as number) * 10) / 10
+        : null,
+    }));
 
     return NextResponse.json({
       hotels: hotelsWithAvg,

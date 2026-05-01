@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Building2, MapPin, Star, Leaf, Image as ImageIcon, Globe, Phone, Mail } from 'lucide-react'
 import {
   Dialog,
@@ -27,10 +27,16 @@ import { ImageUpload } from '@/components/ui/image-upload'
 
 interface AddHotelDialogProps {
   onSuccess: () => void
+  editingHotel?: any
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function AddHotelDialog({ onSuccess }: AddHotelDialogProps) {
-  const [open, setOpen] = useState(false)
+export function AddHotelDialog({ onSuccess, editingHotel, open: externalOpen, onOpenChange }: AddHotelDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = externalOpen ?? internalOpen
+  const setOpen = onOpenChange ?? setInternalOpen
+  
   const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -55,6 +61,32 @@ export function AddHotelDialog({ onSuccess }: AddHotelDialogProps) {
     verified: true,
   })
 
+  useEffect(() => {
+    if (editingHotel) {
+      setFormData({
+        name: editingHotel.name || '',
+        slug: editingHotel.slug || '',
+        description: editingHotel.description || '',
+        shortDesc: editingHotel.shortDesc || '',
+        coverImage: editingHotel.coverImage || '',
+        address: editingHotel.address || '',
+        city: editingHotel.city || '',
+        region: editingHotel.region || '',
+        postcode: editingHotel.postcode || '',
+        latitude: editingHotel.latitude?.toString() || '',
+        longitude: editingHotel.longitude?.toString() || '',
+        ecoRating: editingHotel.ecoRating?.toString() || '3',
+        priceRange: editingHotel.priceRange || '££',
+        amenities: Array.isArray(editingHotel.amenities) ? editingHotel.amenities.join(', ') : '',
+        website: editingHotel.website || '',
+        phone: editingHotel.phone || '',
+        email: editingHotel.email || '',
+        featured: editingHotel.featured || false,
+        verified: editingHotel.verified ?? true,
+      })
+    }
+  }, [editingHotel])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -65,9 +97,10 @@ export function AddHotelDialog({ onSuccess }: AddHotelDialogProps) {
         : []
 
       const res = await fetch('/api/hotels', {
-        method: 'POST',
+        method: editingHotel ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: editingHotel?.id,
           ...formData,
           latitude: formData.latitude ? parseFloat(formData.latitude) : null,
           longitude: formData.longitude ? parseFloat(formData.longitude) : null,
@@ -78,7 +111,7 @@ export function AddHotelDialog({ onSuccess }: AddHotelDialogProps) {
       })
 
       if (res.ok) {
-        toast.success('Hotel added successfully')
+        toast.success(editingHotel ? 'Hotel updated successfully' : 'Hotel added successfully')
         setOpen(false)
         onSuccess()
         setFormData({
@@ -131,16 +164,16 @@ export function AddHotelDialog({ onSuccess }: AddHotelDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-8">
+        {!editingHotel && <Button size="sm" variant="outline" className="h-8">
           <Plus className="mr-2 h-4 w-4" />
           Add Hotel
-        </Button>
+        </Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Eco-Hotel</DialogTitle>
+          <DialogTitle>{editingHotel ? 'Edit Eco-Hotel' : 'Add New Eco-Hotel'}</DialogTitle>
           <DialogDescription>
-            Register a new sustainable accommodation in the directory.
+            {editingHotel ? 'Update the details for this accommodation.' : 'Register a new sustainable accommodation in the directory.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -297,7 +330,7 @@ export function AddHotelDialog({ onSuccess }: AddHotelDialogProps) {
 
           <DialogFooter className="pt-4">
             <Button type="submit" disabled={loading} className="w-full bg-forest hover:bg-forest-dark text-primary-foreground">
-              {loading ? 'Adding...' : 'Add Hotel'}
+              {loading ? (editingHotel ? 'Updating...' : 'Adding...') : (editingHotel ? 'Update Hotel' : 'Add Hotel')}
             </Button>
           </DialogFooter>
         </form>

@@ -1,7 +1,6 @@
 'use client'
 
-
-import { useState, useEffect } from 'react'
+import { useState,useEffect } from 'react'
 import { Plus, Trophy, Calendar, FileText, Camera, HelpCircle, Image as ImageIcon, Layers, X } from 'lucide-react'
 import {
   Dialog,
@@ -100,10 +99,11 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
     setLoading(true)
 
     try {
-      const res = await fetch(editingCompetition ? `/api/competitions/${editingCompetition.id}` : '/api/competitions', {
+      const res = await fetch('/api/competitions', {
         method: editingCompetition ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: editingCompetition?.id,
           ...formData,
           maxEntries: formData.maxEntries ? parseInt(formData.maxEntries) : null,
           totalRounds: formData.conditionType === 'rounds' ? rounds.length : 1,
@@ -111,19 +111,7 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
       })
 
       if (res.ok) {
-        const compData = await res.json()
         toast.success(editingCompetition ? 'Competition updated successfully' : 'Competition added successfully')
-
-        // If multi-round, create the rounds
-        if (formData.conditionType === 'rounds' && compData.competition?.id) {
-          for (const round of rounds) {
-            await fetch(`/api/competitions/${compData.competition.id}/rounds`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(round),
-            })
-          }
-        }
 
         setOpen(false)
         onSuccess()
@@ -181,7 +169,7 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
         <DialogHeader>
           <DialogTitle>{editingCompetition ? 'Edit Competition' : 'Add New Competition'}</DialogTitle>
           <DialogDescription>
-            {editingCompetition ? 'Update the details for this environmental challenge.' : 'Create a new environmental challenge for the community.'}
+            {editingCompetition ? 'Update the details for this challenge.' : 'Create a new environmental challenge for the community.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">

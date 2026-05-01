@@ -177,6 +177,11 @@ export function AdminDashboard() {
   const [postEditOpen, setPostEditOpen] = useState(false)
   const [editingPost, setEditingPost] = useState<Post | null>(null)
 
+  // Other editing states
+  const [editingHotel, setEditingHotel] = useState<Hotel | null>(null)
+  const [editingSite, setEditingSite] = useState<PlantingSite | null>(null)
+  const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null)
+
   // Entry review dialog
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
   const [reviewEntry, setReviewEntry] = useState<Entry | null>(null)
@@ -190,42 +195,37 @@ export function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true)
     try {
+      // Helper to prevent 500 errors from crashing the whole dashboard load
+      const fetchJson = async (url: string) => {
+        const res = await fetch(url);
+        return res.ok ? res.json() : { error: true };
+      };
+
       const [postsData, hotelsData, compsData, usersData, sitesData, entriesData, analyticsData] = await Promise.all([
-        fetch('/api/posts?all=true&limit=100').then((r) => r.json()),
-        fetch('/api/hotels?limit=100').then((r) => r.json()),
-        fetch('/api/competitions?limit=100').then((r) => r.json()),
-        fetch('/api/users?limit=100').then((r) => r.json()),
-        fetch('/api/planting-sites').then((r) => r.json()),
-        fetch('/api/entries').then((r) => r.json()),
-        fetch('/api/admin/analytics').then((r) => r.json())
+        fetchJson('/api/posts?all=true&limit=100'),
+        fetchJson('/api/hotels?limit=100'),
+        fetchJson('/api/competitions?limit=100'),
+        fetchJson('/api/users?limit=100'),
+        fetchJson('/api/planting-sites'),
+        fetchJson('/api/entries?limit=500'), // Fetch all entries once
+        fetchJson('/api/admin/analytics')
       ])
+
       setPosts(postsData.posts || [])
       setHotels(hotelsData.hotels || [])
       setCompetitions(compsData.competitions || [])
       setUsers(usersData.users || [])
       setSites(sitesData.sites || [])
-      setEntries(entriesData.entries || [])
-      setAnalytics(analyticsData)
+      setAnalytics(analyticsData.error ? null : analyticsData)
 
+      // Optimized: Map competition names to entries locally instead of re-fetching per competition
+      const compMap = new Map((compsData.competitions || []).map((c: any) => [c.id, c.title]));
+      const mappedEntries = (entriesData.entries || []).map((entry: any) => ({
+        ...entry,
+        competition: entry.competition || { title: compMap.get(entry.competitionId) || 'Unknown' }
+      }));
+      setEntries(mappedEntries)
 
-      // Fetch entries from each competition
-      const allEntries: Entry[] = []
-      for (const comp of compsData.competitions || []) {
-        try {
-          const entryData = await fetch(
-            `/api/entries?competitionId=${comp.id}`
-          ).then((r) => r.json())
-          for (const entry of entryData.entries || []) {
-            allEntries.push({
-              ...entry,
-              competition: { title: comp.title },
-            })
-          }
-        } catch {
-          // skip
-        }
-      }
-      setEntries(allEntries)
     } catch {
       toast.error('Failed to load admin data')
     } finally {
@@ -259,8 +259,8 @@ export function AdminDashboard() {
         body: JSON.stringify({ id: deleteId }),
       })
 
-      if (res.ok || res.status === 405) {
-        toast.success('Item deleted (if supported)')
+      if (res.ok) {
+        toast.success(`${deleteType.charAt(0).toUpperCase() + deleteType.slice(1)} deleted successfully`)
         fetchData()
       } else {
         const data = await res.json()
@@ -451,9 +451,30 @@ export function AdminDashboard() {
                 onOpenChange={setPostEditOpen}
               />
             )}
-            {activeTab === 'sites' && <AddSiteDialog onSuccess={fetchData} />}
-            {activeTab === 'hotels' && <AddHotelDialog onSuccess={fetchData} />}
-            {activeTab === 'competitions' && <AddCompetitionDialog onSuccess={fetchData} />}
+            {activeTab === 'sites' && (
+              <>
+                <AddSiteDialog onSuccess={fetchData} />
+                {editingSite && (
+                  <AddSiteDialog open={!!editingSite} onOpenChange={(open) => !open && setEditingSite(null)} editingSite={editingSite} onSuccess={fetchData} />
+                )}
+              </>
+            )}
+            {activeTab === 'hotels' && (
+              <>
+                <AddHotelDialog onSuccess={fetchData} />
+                {editingHotel && (
+                  <AddHotelDialog open={!!editingHotel} onOpenChange={(open) => !open && setEditingHotel(null)} editingHotel={editingHotel} onSuccess={fetchData} />
+                )}
+              </>
+            )}
+            {activeTab === 'competitions' && (
+              <>
+                <AddCompetitionDialog onSuccess={fetchData} />
+                {editingCompetition && (
+                  <AddCompetitionDialog open={!!editingCompetition} onOpenChange={(open) => !open && setEditingCompetition(null)} editingCompetition={editingCompetition} onSuccess={fetchData} />
+                )}
+              </>
+            )}
           </div>
         </header>
 
@@ -717,7 +738,7 @@ export function AdminDashboard() {
                                 <DropdownMenuItem onClick={() => router.push(`/hotels/${hotel.id}`)} className="gap-2">
                                   <Eye className="h-4 w-4" /> View Page
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="gap-2">
+                                <DropdownMenuItem onClick={() => setEditingHotel(hotel)} className="gap-2">
                                   <Edit className="h-4 w-4" /> Edit Info
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -783,6 +804,9 @@ export function AdminDashboard() {
                                 <DropdownMenuContent align="end" className="w-40 rounded-xl">
                                   <DropdownMenuItem onClick={() => router.push(`/competitions/${comp.id}`)} className="gap-2">
                                     <Eye className="h-4 w-4" /> Preview
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setEditingCompetition(comp)} className="gap-2">
+                                    <Edit className="h-4 w-4" /> Edit Details
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => { setDeleteType('competition'); setDeleteId(comp.id); setDeleteDialogOpen(true); }} className="text-destructive gap-2">
@@ -968,6 +992,9 @@ export function AdminDashboard() {
                               alt={site.name}
                             />
                             <div className="absolute top-3 right-3">
+                              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity mr-2" onClick={() => setEditingSite(site)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
                               <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { setDeleteType('site'); setDeleteId(site.id); setDeleteDialogOpen(true); }}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>

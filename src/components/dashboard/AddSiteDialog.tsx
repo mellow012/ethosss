@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, MapPin, TreePine, Info, Calendar, Maximize } from 'lucide-react'
 import {
   Dialog,
@@ -21,10 +21,16 @@ import { ImageUpload } from '@/components/ui/image-upload'
 
 interface AddSiteDialogProps {
   onSuccess: () => void
+  editingSite?: any
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function AddSiteDialog({ onSuccess }: AddSiteDialogProps) {
-  const [open, setOpen] = useState(false)
+export function AddSiteDialog({ onSuccess, editingSite, open: externalOpen, onOpenChange }: AddSiteDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = externalOpen ?? internalOpen
+  const setOpen = onOpenChange ?? setInternalOpen
+
   const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -41,6 +47,24 @@ export function AddSiteDialog({ onSuccess }: AddSiteDialogProps) {
     image: '',
   })
 
+  useEffect(() => {
+    if (editingSite) {
+      setFormData({
+        name: editingSite.name || '',
+        region: editingSite.region || '',
+        latitude: editingSite.latitude?.toString() || '',
+        longitude: editingSite.longitude?.toString() || '',
+        treesPlanted: editingSite.treesPlanted?.toString() || '0',
+        species: Array.isArray(editingSite.species) ? editingSite.species.join(', ') : '',
+        dateStarted: editingSite.dateStarted ? new Date(editingSite.dateStarted).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        status: editingSite.status || 'active',
+        description: editingSite.description || '',
+        area: editingSite.area || '',
+        image: editingSite.image || '',
+      })
+    }
+  }, [editingSite])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -51,9 +75,10 @@ export function AddSiteDialog({ onSuccess }: AddSiteDialogProps) {
         : []
 
       const res = await fetch('/api/planting-sites', {
-        method: 'POST',
+        method: editingSite ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: editingSite?.id,
           ...formData,
           latitude: parseFloat(formData.latitude),
           longitude: parseFloat(formData.longitude),
@@ -63,7 +88,7 @@ export function AddSiteDialog({ onSuccess }: AddSiteDialogProps) {
       })
 
       if (res.ok) {
-        toast.success('Planting site added successfully')
+        toast.success(editingSite ? 'Site updated successfully' : 'Planting site added successfully')
         setOpen(false)
         onSuccess()
         setFormData({
@@ -93,16 +118,16 @@ export function AddSiteDialog({ onSuccess }: AddSiteDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-forest hover:bg-forest-dark text-primary-foreground">
+        {!editingSite && <Button size="sm" className="bg-forest hover:bg-forest-dark text-primary-foreground">
           <Plus className="mr-2 h-4 w-4" />
           Add Site
-        </Button>
+        </Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Planting Site</DialogTitle>
+          <DialogTitle>{editingSite ? 'Edit Planting Site' : 'Add New Planting Site'}</DialogTitle>
           <DialogDescription>
-            Enter the details for the new reforestation site. Coordinates will be used to place it on the map.
+            {editingSite ? 'Update reforestation site details.' : 'Enter the details for the new reforestation site. Coordinates will be used to place it on the map.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -224,7 +249,7 @@ export function AddSiteDialog({ onSuccess }: AddSiteDialogProps) {
           </div>
           <DialogFooter className="pt-4">
             <Button type="submit" disabled={loading} className="w-full bg-forest hover:bg-forest-dark text-primary-foreground">
-              {loading ? 'Adding...' : 'Add Planting Site'}
+              {loading ? (editingSite ? 'Updating...' : 'Adding...') : (editingSite ? 'Update Site' : 'Add Planting Site')}
             </Button>
           </DialogFooter>
         </form>

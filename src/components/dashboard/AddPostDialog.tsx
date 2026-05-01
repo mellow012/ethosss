@@ -87,7 +87,7 @@ export function AddPostDialog({ onSuccess, editingPost, open: externalOpen, onOp
     setLoading(true)
 
     try {
-      const res = await fetch(editingPost ? `/api/posts/${editingPost.id}` : '/api/posts', {
+      const res = await fetch('/api/posts', {
         method: editingPost ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
