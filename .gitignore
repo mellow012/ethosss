@@ -46,10 +46,10 @@ yarn-error.log*
 
 .worklog.md
 
-.mini-services
-.examples
-.download
-.zscripts
+mini-services
+examples
+download
+zscripts
 # typescript
 *.tsbuildinfo
 next-env.d.ts
