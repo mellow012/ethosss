@@ -156,21 +156,44 @@ model HotelReview {
 }
 
 model Competition {
-  id          String             @id @default(cuid())
-  title       String
-  slug        String             @unique
-  description String
-  rules       String?
-  coverImage  String?
-  prize       String
-  entryType   String             @default("story")
-  startDate   DateTime
-  endDate     DateTime
-  isActive    Boolean            @default(true)
-  maxEntries  Int?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  entries     CompetitionEntry[]
+  id             String             @id @default(cuid())
+  title          String
+  slug           String             @unique
+  description    String
+  rules          String?
+  coverImage     String?
+  prize          String
+  entryType      String             @default("story")
+  startDate      DateTime
+  endDate        DateTime
+  isActive       Boolean            @default(true)
+  maxEntries     Int?
+  conditionType  String?            // 'rounds', 'entry_count', 'random', 'manual'
+  conditionValue String?            // e.g., '100' (for entry_count threshold)
+  winnerId       String?            // User ID of the winner
+  currentRound   Int                @default(1)
+  totalRounds    Int                @default(1)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  entries        CompetitionEntry[]
+  rounds         CompetitionRound[]
+}
+
+model CompetitionRound {
+  id            String      @id @default(cuid())
+  competitionId String
+  roundNumber   Int
+  title         String
+  description   String?
+  objective     String?     // What contestants must do this round
+  isFinal       Boolean     @default(false)
+  startDate     DateTime?
+  endDate       DateTime?
+  status        String      @default("upcoming") // 'upcoming', 'active', 'completed'
+  createdAt     DateTime    @default(now())
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@unique([competitionId, roundNumber])
 }
 
 model CompetitionEntry {
@@ -179,7 +202,9 @@ model CompetitionEntry {
   userId        String
   content       String
   imageUrl      String?
-  status        String      @default("pending")
+  status        String      @default("pending") // 'pending', 'approved', 'rejected', 'advanced', 'eliminated', 'winner'
+  round         Int         @default(1)          // Which round this entry is for
+  score         Int?                             // Optional scoring for objective-based rounds
   submittedAt   DateTime    @default(now())
   reviewedAt    DateTime?
   reviewedBy    String?
@@ -227,6 +252,7 @@ model PlantingSite {
   status       String   @default("active")
   description  String   @default("")
   area         String   @default("")
+  image        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

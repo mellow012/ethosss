@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { ArrowRight, Leaf } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowRight, Leaf, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 
 export function HeroSection() {
   const { setView } = useAppStore()
   const [settings, setSettings] = useState<any>({})
+  const [currentSlide, setCurrentSlide] = useState(0)
 
   useEffect(() => {
     fetch('/api/settings')
@@ -18,6 +19,26 @@ export function HeroSection() {
       })
       .catch(console.error)
   }, [])
+
+  const getHeroImages = () => {
+    try {
+      const images = JSON.parse(settings.hero_images || '[]')
+      return images.filter((img: string) => img !== '')
+    } catch {
+      return []
+    }
+  }
+
+  const heroImages = getHeroImages()
+  const displayImages = heroImages.length > 0 ? heroImages : [settings.hero_image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&h=1080&fit=crop']
+
+  useEffect(() => {
+    if (displayImages.length <= 1) return
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % displayImages.length)
+    }, 6000)
+    return () => clearInterval(timer)
+  }, [displayImages])
 
   const handleExplore = () => {
     setView('hotels')
@@ -30,36 +51,75 @@ export function HeroSection() {
   }
 
   const content = {
-    image: settings.hero_image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&h=1080&fit=crop',
     subtitle: settings.hero_subtitle || 'Building a greener tomorrow, today',
     eyebrow: settings.hero_eyebrow || 'See the World, Save the Planet',
     title: settings.hero_title || 'Protecting Nature, Inspiring Change',
-    description: settings.hero_description || 'Join Ethoss in building a sustainable future through tree planting, eco-tourism, and community action across the UK'
+    description: settings.hero_description || 'Join Ethosss in building a sustainable future through tree planting, eco-tourism, and community action across the UK'
   }
 
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
-        style={{
-          backgroundImage: `url(${content.image})`,
-        }}
-      />
+      {/* Background Carousel */}
+      <div className="absolute inset-0 z-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentSlide}
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5, ease: 'easeOut' }}
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url(${displayImages[currentSlide]})`,
+            }}
+          />
+        </AnimatePresence>
+      </div>
 
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 gradient-hero" />
+      <div className="absolute inset-0 gradient-hero z-1" />
+
+      {/* Navigation Arrows */}
+      {displayImages.length > 1 && (
+        <>
+          <button
+            onClick={() => setCurrentSlide((prev) => (prev - 1 + displayImages.length) % displayImages.length)}
+            className="absolute left-4 z-20 p-2 rounded-full bg-white/10 backdrop-blur-md text-white/50 hover:text-white hover:bg-white/20 transition-all hidden sm:block"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            onClick={() => setCurrentSlide((prev) => (prev + 1) % displayImages.length)}
+            className="absolute right-4 z-20 p-2 rounded-full bg-white/10 backdrop-blur-md text-white/50 hover:text-white hover:bg-white/20 transition-all hidden sm:block"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+          
+          {/* Indicators */}
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            {displayImages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentSlide(i)}
+                className={`h-1.5 transition-all rounded-full ${
+                  currentSlide === i ? 'w-8 bg-forest' : 'w-2 bg-white/30'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Animated decorative elements */}
       <motion.div
-        className="absolute top-20 left-10 text-forest-light/20"
+        className="absolute top-20 left-10 text-forest-light/20 z-10"
         animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
         transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
       >
         <Leaf className="h-16 w-16" />
       </motion.div>
       <motion.div
-        className="absolute bottom-32 right-16 text-forest-light/15"
+        className="absolute bottom-32 right-16 text-forest-light/15 z-10"
         animate={{ y: [0, 15, 0], rotate: [0, -8, 0] }}
         transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
       >
@@ -89,7 +149,7 @@ export function HeroSection() {
             {content.eyebrow}
           </p>
 
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white leading-tight tracking-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white leading-tight tracking-tight drop-shadow-2xl">
             {content.title.split(',').map((part: string, i: number) => (
               <span key={i}>
                 {i > 0 && ', '}
@@ -133,22 +193,6 @@ export function HeroSection() {
             >
               Join Our Mission
             </Button>
-          </motion.div>
-        </motion.div>
-
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
-        >
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-1.5"
-          >
-            <div className="w-1.5 h-2.5 rounded-full bg-white/50" />
           </motion.div>
         </motion.div>
       </div>

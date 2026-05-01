@@ -9,13 +9,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { useAppStore } from '@/lib/store'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 export function SignupForm() {
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const { setView } = useAppStore()
+  const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -75,9 +75,9 @@ export function SignupForm() {
 
       if (result?.error) {
         toast.success('Account created! Please log in.')
-        setView('login')
+        router.push('/login')
       } else {
-        setView('home')
+        router.push('/')
       }
     } catch {
       toast.error('Something went wrong. Please try again.')
@@ -100,7 +100,7 @@ export function SignupForm() {
           <div className="flex justify-center mb-4">
             <img
               src={mounted && theme === 'dark' ? '/ethos-logo.jpeg' : '/ethos-white-logo.jpeg'}
-              alt="Ethoss"
+              alt="Ethosss"
               className="h-12 w-auto object-contain"
             />
           </div>
@@ -210,7 +210,8 @@ export function SignupForm() {
               <p className="text-sm text-muted-foreground">
                 Already have an account?{' '}
                 <button
-                  onClick={() => setView('login')}
+                  type="button"
+                  onClick={() => router.push('/login')}
                   className="text-forest hover:text-forest-dark font-medium"
                 >
                   Log in

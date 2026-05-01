@@ -21,7 +21,7 @@ import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/lib/store'
+import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { startTransition } from 'react'
@@ -51,7 +51,7 @@ interface Comment {
 
 export function UserDashboard() {
   const { data: session } = useSession()
-  const { setView, navigateTo } = useAppStore()
+  const router = useRouter()
   const [entries, setEntries] = useState<Entry[]>([])
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -139,7 +139,7 @@ export function UserDashboard() {
             You need to be logged in to view your dashboard.
           </p>
           <Button
-            onClick={() => setView('login')}
+            onClick={() => router.push('/login')}
             className="mt-6 bg-forest hover:bg-forest-dark text-primary-foreground"
           >
             Log in
@@ -258,7 +258,7 @@ export function UserDashboard() {
                 </p>
                 <Button
                   variant="outline"
-                  onClick={() => navigateTo('competitions')}
+                  onClick={() => router.push('/competitions')}
                   className="mt-4"
                 >
                   Browse Competitions

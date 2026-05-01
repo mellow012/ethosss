@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useAppStore } from '@/lib/store'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { startTransition } from 'react'
 
@@ -70,7 +70,6 @@ export function HotelList() {
   const [ecoRating, setEcoRating] = useState('all')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const { navigateTo } = useAppStore()
 
   useEffect(() => {
     let cancelled = false
@@ -232,6 +231,7 @@ export function HotelList() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.05 }}
                   >
+                    <Link href={`/hotels/${hotel.id}`} className="block h-full">
                     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                       <div className="relative overflow-hidden">
                         {hotel.coverImage ? (
@@ -318,17 +318,15 @@ export function HotelList() {
                             )}
                           </div>
                         )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigateTo('hotel-detail', hotel.id)}
-                          className="mt-4 w-full group/btn"
+                        <div
+                          className="mt-4 w-full group/btn inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
                         >
                           View Details
                           <ArrowRight className="ml-1.5 h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />
-                        </Button>
+                        </div>
                       </CardContent>
                     </Card>
+                    </Link>
                   </motion.div>
                 )
               })}

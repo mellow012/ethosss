@@ -138,3 +138,54 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    // Get the comment to check ownership
+    const comment = await db.comment.findUnique({
+      where: { id },
+    });
+
+    if (!comment) {
+      return NextResponse.json(
+        { error: "Comment not found" },
+        { status: 404 }
+      );
+    }
+
+    const userRole = (session.user as any).role;
+    const currentUserId = (session.user as any).id;
+
+    // Allow delete if: admin OR comment author
+    if (userRole !== "admin" && comment.authorId !== currentUserId) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    await db.comment.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Comment deleted successfully" });
+  } catch (error: any) {
+    console.error("Comments DELETE error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete comment", details: error.message },
+      { status: 500 }
+    );
+  }
+}

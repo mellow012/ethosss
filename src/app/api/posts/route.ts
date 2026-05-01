@@ -159,3 +159,116 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userRole = (session.user as any).role;
+    if (userRole !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { id, title, slug, content, excerpt, coverImage, gallery, videoUrl, readingTime, published, featured, categoryId, tagIds } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    const updateData: any = {};
+    if (title !== undefined) updateData.title = title;
+    if (slug !== undefined) updateData.slug = slug;
+    if (content !== undefined) updateData.content = content;
+    if (excerpt !== undefined) updateData.excerpt = excerpt;
+    if (coverImage !== undefined) updateData.coverImage = coverImage;
+    if (gallery !== undefined) updateData.gallery = gallery;
+    if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
+    if (readingTime !== undefined) updateData.readingTime = readingTime ? parseInt(readingTime) : null;
+    if (published !== undefined) updateData.published = published;
+    if (featured !== undefined) updateData.featured = featured;
+    if (categoryId !== undefined) updateData.categoryId = categoryId;
+
+    const post = await db.post.update({
+      where: { id },
+      data: {
+        ...updateData,
+        ...(tagIds && {
+          tags: {
+            deleteMany: {},
+            create: tagIds.map((tagId: string) => ({ tagId })),
+          },
+        }),
+      },
+      include: {
+        author: {
+          select: { id: true, name: true, email: true, image: true },
+        },
+        category: true,
+        tags: {
+          include: { tag: true },
+        },
+      },
+    });
+
+    return NextResponse.json({ post });
+  } catch (error: any) {
+    console.error("Posts PUT error:", error);
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "A post with this slug already exists" },
+        { status: 409 }
+      );
+    }
+    if (error.code === "P2025") {
+      return NextResponse.json(
+        { error: "Post not found" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Failed to update post", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userRole = (session.user as any).role;
+    if (userRole !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    await db.post.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Post deleted successfully" });
+  } catch (error: any) {
+    console.error("Posts DELETE error:", error);
+    if (error.code === "P2025") {
+      return NextResponse.json(
+        { error: "Post not found" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Failed to delete post", details: error.message },
+      { status: 500 }
+    );
+  }
+}

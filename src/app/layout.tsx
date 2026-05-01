@@ -18,34 +18,34 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Ethoss | Environmental Advocacy & Eco-Tourism UK',
+  title: 'Ethosss | Environmental Advocacy & Eco-Tourism',
   description:
-    'Join Ethoss in building a sustainable future through tree planting, eco-tourism, and community action across the UK. Discover eco-friendly hotels, enter environmental competitions, and read inspiring stories of conservation.',
+    'Join Ethosss in building a sustainable future through tree planting, eco-tourism, and community action in Malawi and globally. Discover eco-friendly hotels, enter environmental competitions, and read inspiring stories of conservation.',
   keywords: [
-    'Ethoss',
+    'Ethosss',
     'environmental advocacy',
     'eco-tourism',
-    'tree planting UK',
+    'tree planting Malawi',
     'sustainable travel',
     'conservation',
     'green hotels',
     'nature competitions',
   ],
-  authors: [{ name: 'Ethoss Team' }],
+  authors: [{ name: 'Ethosss Team' }],
   icons: {
     icon: '/favicon.jpeg',
   },
   openGraph: {
-    title: 'Ethoss — See the World, Save the Planet',
+    title: 'Ethosss — See the World, Save the Planet',
     description:
-      'Protecting Nature, Inspiring Change. Join Ethoss for eco-tourism, tree planting, and community action across the UK.',
+      'Protecting Nature, Inspiring Change. Join Ethosss for eco-tourism, tree planting, and community action in Malawi and globally.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ethoss — See the World, Save the Planet',
+    title: 'Ethosss — See the World, Save the Planet',
     description:
-      'Protecting Nature, Inspiring Change. Join Ethoss for eco-tourism, tree planting, and community action across the UK.',
+      'Protecting Nature, Inspiring Change. Join Ethosss for eco-tourism, tree planting, and community action in Malawi and globally.',
   },
 }
 

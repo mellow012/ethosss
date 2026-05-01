@@ -95,7 +95,7 @@ export function HotelDetail({ id }: { id: string }) {
         toast.error('Failed to load hotel')
       })
       .finally(() => setLoading(false))
-  }, [selectedId])
+  }, [id])
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault()

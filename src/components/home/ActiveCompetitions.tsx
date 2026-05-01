@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useAppStore } from '@/lib/store'
+import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 
 interface Competition {
@@ -47,7 +47,7 @@ const entryTypeColors: Record<string, string> = {
 export function ActiveCompetitions() {
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [loading, setLoading] = useState(true)
-  const { navigateTo } = useAppStore()
+  const router = useRouter()
 
   useEffect(() => {
     fetch('/api/competitions?active=true&limit=3')
@@ -88,7 +88,7 @@ export function ActiveCompetitions() {
           </div>
           <Button
             variant="outline"
-            onClick={() => navigateTo('competitions')}
+            onClick={() => router.push('/competitions')}
             className="shrink-0 group"
           >
             View All Competitions
@@ -187,7 +187,7 @@ export function ActiveCompetitions() {
                       {status === 'active' && (
                         <Button
                           size="sm"
-                          onClick={() => navigateTo('competition-detail', comp.id)}
+                          onClick={() => router.push(`/competitions/${comp.id}`)}
                           className="mt-4 w-full bg-forest hover:bg-forest-dark text-primary-foreground group/btn"
                         >
                           Enter Now
@@ -198,7 +198,7 @@ export function ActiveCompetitions() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigateTo('competition-detail', comp.id)}
+                          onClick={() => router.push(`/competitions/${comp.id}`)}
                           className="mt-4 w-full"
                         >
                           View Details

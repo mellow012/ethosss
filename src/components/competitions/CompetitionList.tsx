@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useAppStore } from '@/lib/store'
+import Link from 'next/link'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { startTransition } from 'react'
@@ -54,7 +54,6 @@ export function CompetitionList() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const { navigateTo } = useAppStore()
 
   useEffect(() => {
     let cancelled = false
@@ -163,6 +162,7 @@ export function CompetitionList() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.05 }}
                   >
+                    <Link href={`/competitions/${comp.id}`} className="block h-full">
                     <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                       <div className="relative overflow-hidden">
                         {comp.coverImage ? (
@@ -211,13 +211,10 @@ export function CompetitionList() {
                             {comp.description}
                           </p>
                         )}
-                        <Button
-                          size="sm"
-                          variant={status === 'active' ? 'default' : 'outline'}
-                          onClick={() => navigateTo('competition-detail', comp.id)}
-                          className={`mt-4 w-full group/btn ${
+                        <div
+                          className={`mt-4 w-full group/btn inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 ${
                             status === 'active'
-                              ? 'bg-forest hover:bg-forest-dark text-primary-foreground'
+                              ? 'bg-forest hover:bg-forest-dark text-primary-foreground border-transparent'
                               : ''
                           }`}
                         >
@@ -229,9 +226,10 @@ export function CompetitionList() {
                           ) : (
                             'View Details'
                           )}
-                        </Button>
+                        </div>
                       </CardContent>
                     </Card>
+                    </Link>
                   </motion.div>
                 )
               })}

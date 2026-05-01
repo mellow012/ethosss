@@ -130,7 +130,7 @@ function MapInner({ sites }: { sites: TreePlantingSite[] }) {
 
       marker.bindPopup(popupContent, {
         maxWidth: 300,
-        className: 'ethoss-tree-popup',
+        className: 'ethosss-tree-popup',
       })
 
       markersRef.current.push(marker)
@@ -176,7 +176,7 @@ export function TreePlantingMap() {
             <span className="text-gradient-green">Trees</span>
           </h2>
           <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
-            Explore our tree planting sites across the United Kingdom. Each marker represents a community-driven
+            Explore our tree planting sites in Malawi and globally. Each marker represents a community-driven
             reforestation project — click to learn more about the species, impact, and how you can get involved.
           </p>
         </motion.div>
@@ -193,7 +193,7 @@ export function TreePlantingMap() {
             { label: 'Trees Planted', value: totalTrees.toLocaleString(), accent: 'bg-forest' },
             { label: 'Planting Sites', value: sites.length.toString(), accent: 'bg-moss' },
             { label: 'Active Sites', value: activeSites.toString(), accent: 'bg-gold' },
-            { label: 'UK Regions', value: '10+', accent: 'bg-forest-light' },
+            { label: 'Active Regions', value: '10+', accent: 'bg-forest-light' },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -242,15 +242,15 @@ export function TreePlantingMap() {
           background: transparent !important;
           border: none !important;
         }
-        .ethoss-tree-popup .leaflet-popup-content-wrapper {
+        .ethosss-tree-popup .leaflet-popup-content-wrapper {
           border-radius: 12px;
           box-shadow: 0 8px 30px rgba(0,0,0,0.12);
           padding: 4px;
         }
-        .ethoss-tree-popup .leaflet-popup-content {
+        .ethosss-tree-popup .leaflet-popup-content {
           margin: 8px 12px;
         }
-        .ethoss-tree-popup .leaflet-popup-tip {
+        .ethosss-tree-popup .leaflet-popup-tip {
           box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
       `}</style>

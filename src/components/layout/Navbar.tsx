@@ -32,19 +32,20 @@ import {
   SheetClose,
 } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useAppStore, type AppView } from '@/lib/store'
+import { usePathname, useRouter } from 'next/navigation'
 
-const navLinks: { label: string; view: AppView }[] = [
-  { label: 'Home', view: 'home' },
-  { label: 'Blog', view: 'blog' },
-  { label: 'Hotels', view: 'hotels' },
-  { label: 'Competitions', view: 'competitions' },
+const navLinks: { label: string; href: string }[] = [
+  { label: 'Home', href: '/' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'Hotels', href: '/hotels' },
+  { label: 'Competitions', href: '/competitions' },
 ]
 
 export function Navbar() {
   const { data: session } = useSession()
   const { theme, setTheme } = useTheme()
-  const { currentView, setView } = useAppStore()
+  const pathname = usePathname()
+  const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
   const mounted = useSyncExternalStore(
     (cb) => {
@@ -66,9 +67,8 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [handleScroll])
 
-  const handleNav = (view: AppView) => {
-    setView(view)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  const handleNav = (href: string) => {
+    router.push(href)
   }
 
   const userRole = (session?.user as any)?.role
@@ -94,12 +94,12 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button
-            onClick={() => handleNav('home')}
+            onClick={() => handleNav('/')}
             className="flex items-center group"
           >
             <img
               src={mounted && theme === 'dark' ? '/ethos-logo.jpeg' : '/ethos-white-logo.jpeg'}
-              alt="Ethoss"
+              alt="Ethosss"
               className="h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
             />
           </button>
@@ -108,16 +108,16 @@ export function Navbar() {
           <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
               <button
-                key={link.view}
-                onClick={() => handleNav(link.view)}
+                key={link.href}
+                onClick={() => handleNav(link.href)}
                 className={`relative px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  currentView === link.view
+                  pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
                     ? 'text-forest'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {link.label}
-                {currentView === link.view && (
+                {(pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))) && (
                   <motion.div
                     layoutId="navbar-active"
                     className="absolute inset-0 bg-forest/10 rounded-md"
@@ -156,7 +156,7 @@ export function Navbar() {
                     className="relative h-9 w-9 rounded-full"
                   >
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={userImage} alt={userName} />
+                      <AvatarImage src={userImage || undefined} alt={userName} />
                       <AvatarFallback className="bg-forest text-primary-foreground text-xs font-semibold">
                         {initials}
                       </AvatarFallback>
@@ -171,12 +171,12 @@ export function Navbar() {
                     </p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleNav('dashboard')}>
+                  <DropdownMenuItem onClick={() => handleNav('/dashboard')}>
                     <User className="mr-2 h-4 w-4" />
                     Dashboard
                   </DropdownMenuItem>
                   {userRole === 'admin' && (
-                    <DropdownMenuItem onClick={() => handleNav('admin')}>
+                    <DropdownMenuItem onClick={() => handleNav('/admin')}>
                       <Shield className="mr-2 h-4 w-4" />
                       Admin Panel
                     </DropdownMenuItem>
@@ -195,13 +195,13 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleNav('login')}
+                  onClick={() => handleNav('/login')}
                 >
                   Log in
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => handleNav('signup')}
+                  onClick={() => handleNav('/signup')}
                   className="bg-forest hover:bg-forest-dark text-primary-foreground"
                 >
                   Sign up
@@ -224,7 +224,7 @@ export function Navbar() {
                   <div className="flex items-center">
                     <img
                       src={mounted && theme === 'dark' ? '/ethos-logo.jpeg' : '/ethos-white-logo.jpeg'}
-                      alt="Ethoss"
+                      alt="Ethosss"
                       className="h-8 w-auto object-contain"
                     />
                   </div>
@@ -232,11 +232,11 @@ export function Navbar() {
                   {/* Mobile Nav Links */}
                   <nav className="flex flex-col gap-1">
                     {navLinks.map((link) => (
-                      <SheetClose asChild key={link.view}>
+                      <SheetClose asChild key={link.href}>
                         <button
-                          onClick={() => handleNav(link.view)}
+                          onClick={() => handleNav(link.href)}
                           className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                            currentView === link.view
+                            pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
                               ? 'bg-forest/10 text-forest'
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                           }`}
@@ -253,7 +253,7 @@ export function Navbar() {
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-3 px-4 py-2">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={userImage} alt={userName} />
+                            <AvatarImage src={userImage || undefined} alt={userName} />
                             <AvatarFallback className="bg-forest text-primary-foreground text-xs">
                               {initials}
                             </AvatarFallback>
@@ -267,7 +267,7 @@ export function Navbar() {
                         </div>
                         <SheetClose asChild>
                           <button
-                            onClick={() => handleNav('dashboard')}
+                            onClick={() => handleNav('/dashboard')}
                             className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors"
                           >
                             <User className="h-4 w-4" />
@@ -277,7 +277,7 @@ export function Navbar() {
                         {userRole === 'admin' && (
                           <SheetClose asChild>
                             <button
-                              onClick={() => handleNav('admin')}
+                              onClick={() => handleNav('/admin')}
                               className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors"
                             >
                               <Shield className="h-4 w-4" />
@@ -300,7 +300,7 @@ export function Navbar() {
                         <SheetClose asChild>
                           <Button
                             variant="outline"
-                            onClick={() => handleNav('login')}
+                            onClick={() => handleNav('/login')}
                             className="w-full"
                           >
                             Log in
@@ -308,7 +308,7 @@ export function Navbar() {
                         </SheetClose>
                         <SheetClose asChild>
                           <Button
-                            onClick={() => handleNav('signup')}
+                            onClick={() => handleNav('/signup')}
                             className="w-full bg-forest hover:bg-forest-dark text-primary-foreground"
                           >
                             Sign up

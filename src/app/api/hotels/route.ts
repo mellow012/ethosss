@@ -169,3 +169,125 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userRole = (session.user as any).role;
+    if (userRole !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    await db.hotel.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Hotel deleted successfully" });
+  } catch (error: any) {
+    console.error("Hotels DELETE error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete hotel", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userRole = (session.user as any).role;
+    if (userRole !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const {
+      id,
+      name,
+      slug,
+      description,
+      shortDesc,
+      coverImage,
+      gallery,
+      address,
+      city,
+      region,
+      postcode,
+      latitude,
+      longitude,
+      ecoRating,
+      priceRange,
+      amenities,
+      website,
+      phone,
+      email,
+      featured,
+      verified,
+    } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    const updateData: any = {};
+    
+    if (name !== undefined) updateData.name = name;
+    if (slug !== undefined) updateData.slug = slug;
+    if (description !== undefined) updateData.description = description;
+    if (shortDesc !== undefined) updateData.shortDesc = shortDesc;
+    if (coverImage !== undefined) updateData.coverImage = coverImage;
+    if (gallery !== undefined) updateData.gallery = JSON.stringify(gallery);
+    if (address !== undefined) updateData.address = address;
+    if (city !== undefined) updateData.city = city;
+    if (region !== undefined) updateData.region = region;
+    if (postcode !== undefined) updateData.postcode = postcode;
+    if (latitude !== undefined) updateData.latitude = latitude;
+    if (longitude !== undefined) updateData.longitude = longitude;
+    if (ecoRating !== undefined) updateData.ecoRating = ecoRating;
+    if (priceRange !== undefined) updateData.priceRange = priceRange;
+    if (amenities !== undefined) updateData.amenities = JSON.stringify(amenities);
+    if (website !== undefined) updateData.website = website;
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+    if (featured !== undefined) updateData.featured = featured;
+    if (verified !== undefined) updateData.verified = verified;
+
+    const hotel = await db.hotel.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json({ hotel });
+  } catch (error: any) {
+    console.error("Hotels PUT error:", error);
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "A hotel with this slug already exists" },
+        { status: 409 }
+      );
+    }
+    if (error.code === "P2025") {
+      return NextResponse.json(
+        { error: "Hotel not found" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Failed to update hotel", details: error.message },
+      { status: 500 }
+    );
+  }
+}

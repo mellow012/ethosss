@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useAppStore } from '@/lib/store'
+import Link from 'next/link'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { startTransition } from 'react'
@@ -56,7 +56,6 @@ export function BlogList() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const { navigateTo } = useAppStore()
 
   useEffect(() => {
     fetch('/api/categories')
@@ -205,11 +204,11 @@ export function BlogList() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: index * 0.05 }}
                 >
-                  <Card className="overflow-hidden group hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_50px_rgba(255,255,255,0.05)] transition-all duration-500 h-full flex flex-col cursor-pointer border-none bg-background/50 backdrop-blur-sm">
-                    <div
-                      className="relative overflow-hidden aspect-video"
-                      onClick={() => navigateTo('blog-detail', post.id)}
-                    >
+                  <Link href={`/blog/${post.id}`} className="block h-full">
+                    <Card className="overflow-hidden group hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_50px_rgba(255,255,255,0.05)] transition-all duration-500 h-full flex flex-col cursor-pointer border-none bg-background/50 backdrop-blur-sm">
+                      <div
+                        className="relative overflow-hidden aspect-video"
+                      >
                       {post.coverImage ? (
                         <div
                           className="h-full w-full bg-cover bg-center group-hover:scale-110 transition-transform duration-700 ease-in-out"
@@ -241,7 +240,6 @@ export function BlogList() {
                     </div>
                     <CardContent
                       className="p-6 flex flex-col flex-1"
-                      onClick={() => navigateTo('blog-detail', post.id)}
                     >
                       <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
                         <span className="text-forest">{post.author.name}</span>
@@ -279,6 +277,7 @@ export function BlogList() {
                       </div>
                     </CardContent>
                   </Card>
+                </Link>
                 </motion.div>
               ))}
             </div>

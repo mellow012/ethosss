@@ -13,6 +13,7 @@ import {
   Twitter,
   Facebook,
   MapPin,
+  Phone,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -113,24 +114,38 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Main Footer — Light background */}
-      <div className="bg-sage-light">
+      {/* Main Footer — Adaptive background */}
+      <div className="bg-sage-light dark:bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
             {/* Brand */}
             <div className="sm:col-span-2 lg:col-span-1">
               <div className="flex items-center gap-3 mb-4">
                 <img
-                  src={mounted && theme === 'dark' ? '/ethos-logo.jpeg' : '/ethos-white-logo.jpeg'}
-                  alt="Ethoss"
+                  src={mounted && theme === 'dark' ? '/ethos-white-logo.jpeg' : '/ethos-logo.jpeg'}
+                  alt="Ethosss"
                   className="h-8 w-auto object-contain"
                 />
               </div>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 See the World, Save the Planet. Protecting nature and inspiring
                 change through community-driven environmental advocacy,
-                eco-tourism, and sustainable practices across the United Kingdom.
+                eco-tourism, and sustainable practices.
               </p>
+              <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+                <p className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-forest" />
+                  Blantyre, Malawi Branch
+                </p>
+                <p className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-forest" />
+                  0883335839
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-forest" />
+                  contact.ethosss@gmail.com
+                </p>
+              </div>
               <div className="flex gap-3 mt-5">
                 {[Instagram, Twitter, Facebook, Globe].map((Icon, i) => (
                   <a
@@ -199,19 +214,19 @@ export function Footer() {
               </p>
               <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 text-forest" />
-                <span>Active across 15+ UK regions</span>
+                <span>Active globally and in Malawi</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom bar — White */}
-      <div className="bg-white">
+      {/* Bottom bar — Adaptive background */}
+      <div className="bg-white dark:bg-slate-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
             <p>
-              &copy; {new Date().getFullYear()} Ethoss. All rights reserved. Made
+              &copy; {new Date().getFullYear()} Ethosss. All rights reserved. Made
               with{' '}
               <Heart className="inline h-3 w-3 text-red-500 fill-red-500" /> for
               the planet.

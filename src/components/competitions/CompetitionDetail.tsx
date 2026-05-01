@@ -55,8 +55,10 @@ interface Entry {
   user: { id: string; name: string; email: string; image: string | null }
 }
 
-export function CompetitionDetail() {
-  const { selectedId, navigateTo } = useAppStore()
+import { useRouter } from 'next/navigation'
+
+export function CompetitionDetail({ id }: { id: string }) {
+  const router = useRouter()
   const { data: session } = useSession()
   const [competition, setCompetition] = useState<Competition | null>(null)
   const [entries, setEntries] = useState<Entry[]>([])
@@ -68,15 +70,15 @@ export function CompetitionDetail() {
   const [entryImageUrl, setEntryImageUrl] = useState('')
 
   useEffect(() => {
-    if (!selectedId) return
+    if (!id) return
     setLoading(true)
     Promise.all([
       fetch(`/api/competitions?limit=100`).then((r) => r.json()),
-      fetch(`/api/entries?competitionId=${selectedId}`).then((r) => r.json()),
+      fetch(`/api/entries?competitionId=${id}`).then((r) => r.json()),
     ])
       .then(([compData, entryData]) => {
         const found = (compData.competitions || []).find(
-          (c: Competition) => c.id === selectedId
+          (c: Competition) => c.id === id
         )
         setCompetition(found || null)
         setEntries(entryData.entries || [])
@@ -85,7 +87,7 @@ export function CompetitionDetail() {
         toast.error('Failed to load competition')
       })
       .finally(() => setLoading(false))
-  }, [selectedId])
+  }, [id])
 
   const getStatus = (comp: Competition) => {
     const now = new Date()
@@ -109,7 +111,7 @@ export function CompetitionDetail() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          competitionId: selectedId,
+          competitionId: id,
           content: entryContent.trim(),
           imageUrl: entryImageUrl.trim() || null,
         }),
@@ -121,7 +123,7 @@ export function CompetitionDetail() {
         setEntryImageUrl('')
         // Refresh entries
         const entryData = await fetch(
-          `/api/entries?competitionId=${selectedId}`
+          `/api/entries?competitionId=${id}`
         ).then((r) => r.json())
         setEntries(entryData.entries || [])
       } else {
@@ -159,7 +161,7 @@ export function CompetitionDetail() {
         </h2>
         <Button
           variant="outline"
-          onClick={() => navigateTo('competitions')}
+          onClick={() => router.push('/competitions')}
           className="mt-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -183,7 +185,7 @@ export function CompetitionDetail() {
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Button
           variant="ghost"
-          onClick={() => navigateTo('competitions')}
+          onClick={() => router.push('/competitions')}
           className="mb-6 -ml-2"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -339,7 +341,7 @@ export function CompetitionDetail() {
                   You need an account to submit your competition entry.
                 </p>
                 <Button
-                  onClick={() => navigateTo('login')}
+                  onClick={() => router.push('/login')}
                   className="mt-4 bg-forest hover:bg-forest-dark text-primary-foreground"
                 >
                   Log in

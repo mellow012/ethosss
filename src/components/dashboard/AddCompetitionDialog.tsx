@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Trophy, Calendar, FileText, Camera, HelpCircle, Image as ImageIcon } from 'lucide-react'
+
+import { useState, useEffect } from 'react'
+import { Plus, Trophy, Calendar, FileText, Camera, HelpCircle, Image as ImageIcon, Layers, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -27,10 +28,16 @@ import { ImageUpload } from '@/components/ui/image-upload'
 
 interface AddCompetitionDialogProps {
   onSuccess: () => void
+  editingCompetition?: any
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function AddCompetitionDialog({ onSuccess }: AddCompetitionDialogProps) {
-  const [open, setOpen] = useState(false)
+export function AddCompetitionDialog({ onSuccess, editingCompetition, open: externalOpen, onOpenChange }: AddCompetitionDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = externalOpen ?? internalOpen
+  const setOpen = onOpenChange ?? setInternalOpen
+
   const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -43,26 +50,81 @@ export function AddCompetitionDialog({ onSuccess }: AddCompetitionDialogProps) {
     entryType: 'story',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    isActive: true,
     maxEntries: '',
+    conditionType: 'manual',
+    conditionValue: '',
+    totalRounds: 1,
   })
+
+  const [rounds, setRounds] = useState<{ title: string; objective: string; isFinal: boolean }[]>([
+    { title: 'Round 1', objective: '', isFinal: true },
+  ])
+
+  useEffect(() => {
+    if (editingCompetition) {
+      setFormData({
+        title: editingCompetition.title || '',
+        slug: editingCompetition.slug || '',
+        description: editingCompetition.description || '',
+        rules: editingCompetition.rules || '',
+        coverImage: editingCompetition.coverImage || '',
+        prize: editingCompetition.prize || '',
+        entryType: editingCompetition.entryType || 'story',
+        startDate: editingCompetition.startDate ? new Date(editingCompetition.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        endDate: editingCompetition.endDate ? new Date(editingCompetition.endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        maxEntries: editingCompetition.maxEntries?.toString() || '',
+        conditionType: editingCompetition.conditionType || 'manual',
+        conditionValue: editingCompetition.conditionValue || '',
+        totalRounds: editingCompetition.totalRounds || 1,
+      })
+    }
+  }, [editingCompetition])
+
+  const addRound = () => {
+    const updated = rounds.map(r => ({ ...r, isFinal: false }))
+    updated.push({ title: `Round ${updated.length + 1}`, objective: '', isFinal: true })
+    setRounds(updated)
+    setFormData({ ...formData, totalRounds: updated.length })
+  }
+
+  const removeRound = (index: number) => {
+    if (rounds.length <= 1) return
+    const updated = rounds.filter((_, i) => i !== index)
+    updated[updated.length - 1].isFinal = true
+    setRounds(updated)
+    setFormData({ ...formData, totalRounds: updated.length })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      const res = await fetch('/api/competitions', {
-        method: 'POST',
+      const res = await fetch(editingCompetition ? `/api/competitions/${editingCompetition.id}` : '/api/competitions', {
+        method: editingCompetition ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
           maxEntries: formData.maxEntries ? parseInt(formData.maxEntries) : null,
+          totalRounds: formData.conditionType === 'rounds' ? rounds.length : 1,
         }),
       })
 
       if (res.ok) {
-        toast.success('Competition added successfully')
+        const compData = await res.json()
+        toast.success(editingCompetition ? 'Competition updated successfully' : 'Competition added successfully')
+
+        // If multi-round, create the rounds
+        if (formData.conditionType === 'rounds' && compData.competition?.id) {
+          for (const round of rounds) {
+            await fetch(`/api/competitions/${compData.competition.id}/rounds`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(round),
+            })
+          }
+        }
+
         setOpen(false)
         onSuccess()
         setFormData({
@@ -75,9 +137,12 @@ export function AddCompetitionDialog({ onSuccess }: AddCompetitionDialogProps) {
           entryType: 'story',
           startDate: new Date().toISOString().split('T')[0],
           endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          isActive: true,
           maxEntries: '',
+          conditionType: 'manual',
+          conditionValue: '',
+          totalRounds: 1,
         })
+        setRounds([{ title: 'Round 1', objective: '', isFinal: true }])
       } else {
         const data = await res.json()
         toast.error(data.error || 'Failed to add competition')
@@ -107,16 +172,16 @@ export function AddCompetitionDialog({ onSuccess }: AddCompetitionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-8">
+        {!editingCompetition && <Button size="sm" variant="outline" className="h-8">
           <Plus className="mr-2 h-4 w-4" />
           Add Competition
-        </Button>
+        </Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Competition</DialogTitle>
+          <DialogTitle>{editingCompetition ? 'Edit Competition' : 'Add New Competition'}</DialogTitle>
           <DialogDescription>
-            Create a new environmental challenge for the community.
+            {editingCompetition ? 'Update the details for this environmental challenge.' : 'Create a new environmental challenge for the community.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -171,6 +236,85 @@ export function AddCompetitionDialog({ onSuccess }: AddCompetitionDialogProps) {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="comp-condition">Winner Condition</Label>
+              <Select
+                value={formData.conditionType}
+                onValueChange={(v) => setFormData({ ...formData, conditionType: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual">Manual Selection</SelectItem>
+                  <SelectItem value="rounds">Multi-Round Challenge</SelectItem>
+                  <SelectItem value="entry_count">Entry Threshold</SelectItem>
+                  <SelectItem value="random">Random Draw (End Date)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.conditionType === 'entry_count' && (
+              <div className="space-y-2">
+                <Label htmlFor="comp-cond-val">Entry Goal</Label>
+                <Input
+                  id="comp-cond-val"
+                  type="number"
+                  placeholder="e.g. 100"
+                  value={formData.conditionValue}
+                  onChange={(e) => setFormData({ ...formData, conditionValue: e.target.value })}
+                  required
+                />
+              </div>
+            )}
+          </div>
+          {formData.conditionType === 'rounds' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2"><Layers className="h-4 w-4 text-forest" /> Competition Rounds</Label>
+                <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={addRound}>
+                  <Plus className="h-3 w-3" /> Add Round
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {rounds.map((round, i) => (
+                  <div key={i} className="relative p-3 border rounded-xl bg-muted/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        {round.isFinal ? '🏆 Final Round' : `Round ${i + 1}`}
+                      </span>
+                      {rounds.length > 1 && (
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeRound(i)}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <Input
+                      placeholder={`Round ${i + 1} title`}
+                      value={round.title}
+                      onChange={(e) => {
+                        const updated = [...rounds]
+                        updated[i].title = e.target.value
+                        setRounds(updated)
+                      }}
+                      className="h-8 text-sm"
+                    />
+                    <Input
+                      placeholder="Objective (e.g., Submit a photo of a tree you planted)"
+                      value={round.objective}
+                      onChange={(e) => {
+                        const updated = [...rounds]
+                        updated[i].objective = e.target.value
+                        setRounds(updated)
+                      }}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Admin reviews entries each round. Approved contestants advance. Final round winner is picked randomly.</p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="comp-start">Start Date *</Label>
               <Input
                 id="comp-start"
@@ -222,7 +366,7 @@ export function AddCompetitionDialog({ onSuccess }: AddCompetitionDialogProps) {
           </div>
           <DialogFooter className="pt-4">
             <Button type="submit" disabled={loading} className="w-full bg-forest hover:bg-forest-dark text-primary-foreground">
-              {loading ? 'Creating...' : 'Create Competition'}
+              {loading ? (editingCompetition ? 'Updating...' : 'Creating...') : (editingCompetition ? 'Update Competition' : 'Create Competition')}
             </Button>
           </DialogFooter>
         </form>

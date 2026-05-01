@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 const testimonials = [
   {
     id: 1,
-    text: 'Ethoss has completely transformed how I think about travel. Finding eco-friendly hotels in the UK has never been easier. The Forest Haven in the Lake District was absolutely breathtaking and truly sustainable.',
+    text: 'Ethosss has completely transformed how I think about travel. Finding eco-friendly hotels in the UK has never been easier. The Forest Haven in the Lake District was absolutely breathtaking and truly sustainable.',
     author: 'Sarah Mitchell',
     role: 'Eco-Traveller, London',
     rating: 5,
@@ -23,14 +23,14 @@ const testimonials = [
   },
   {
     id: 3,
-    text: 'The tree planting initiative organised by Ethoss has planted over 500 trees in our community alone. My children now understand the importance of environmental stewardship and look forward to every planting day.',
+    text: 'The tree planting initiative organised by Ethosss has planted over 500 trees in our community alone. My children now understand the importance of environmental stewardship and look forward to every planting day.',
     author: 'Priya Sharma',
     role: 'Community Leader, Bristol',
     rating: 5,
   },
   {
     id: 4,
-    text: 'As a hotel owner, being verified by Ethoss has brought us guests who genuinely appreciate sustainability. Our occupancy has increased by 30% since joining the platform, and every guest values our eco-friendly practices.',
+    text: 'As a hotel owner, being verified by Ethosss has brought us guests who genuinely appreciate sustainability. Our occupancy has increased by 30% since joining the platform, and every guest values our eco-friendly practices.',
     author: 'Tom Whitaker',
     role: 'Hotel Owner, Cornwall',
     rating: 5,
@@ -76,7 +76,7 @@ export function Testimonials() {
             Voices from Our Community
           </h2>
           <p className="mt-3 text-white/70 max-w-2xl mx-auto">
-            Hear from the people who are part of the Ethoss journey —
+            Hear from the people who are part of the Ethosss journey —
             travellers, volunteers, hoteliers, and advocates for change.
           </p>
         </motion.div>

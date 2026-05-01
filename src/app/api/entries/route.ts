@@ -152,6 +152,34 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Automatic Winner Logic: Entry Threshold
+    if (competition.conditionType === 'entry_count' && competition.conditionValue) {
+      const threshold = parseInt(competition.conditionValue);
+      const currentCount = await db.competitionEntry.count({ where: { competitionId } });
+      
+      if (currentCount >= threshold) {
+        // Pick a random winner from all approved entries (or all if we don't care about approval for auto-pick)
+        const entries = await db.competitionEntry.findMany({
+          where: { competitionId }
+        });
+        
+        if (entries.length > 0) {
+          const winnerEntry = entries[Math.floor(Math.random() * entries.length)];
+          
+          await db.$transaction([
+            db.competitionEntry.update({
+              where: { id: winnerEntry.id },
+              data: { status: 'winner' }
+            }),
+            db.competition.update({
+              where: { id: competitionId },
+              data: { isActive: false, winnerId: winnerEntry.userId }
+            })
+          ]);
+        }
+      }
+    }
+
     return NextResponse.json({ entry }, { status: 201 });
   } catch (error: any) {
     console.error("Entries POST error:", error);
@@ -216,6 +244,65 @@ export async function PUT(request: NextRequest) {
     }
     return NextResponse.json(
       { error: "Failed to update entry", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    // Get the entry to check ownership
+    const entry = await db.competitionEntry.findUnique({
+      where: { id },
+    });
+
+    if (!entry) {
+      return NextResponse.json(
+        { error: "Entry not found" },
+        { status: 404 }
+      );
+    }
+
+    const userRole = (session.user as any).role;
+    const currentUserId = (session.user as any).id;
+
+    // Allow delete if: admin OR entry owner
+    if (userRole !== "admin" && entry.userId !== currentUserId) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    // Don't allow deletion of winner entries
+    if (entry.status === "winner") {
+      return NextResponse.json(
+        { error: "Cannot delete winner entries" },
+        { status: 400 }
+      );
+    }
+
+    await db.competitionEntry.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Entry deleted successfully" });
+  } catch (error: any) {
+    console.error("Entries DELETE error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete entry", details: error.message },
       { status: 500 }
     );
   }

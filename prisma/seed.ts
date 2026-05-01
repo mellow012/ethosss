@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 
 async function seed() {
-  console.log("🌱 Seeding Ethoss database...");
+  console.log("🌱 Seeding Ethosss database...");
 
   // Clear existing data to avoid unique constraint errors
   await db.comment.deleteMany();
@@ -19,15 +19,15 @@ async function seed() {
   // Create admin user
   const hashedPassword = await bcrypt.hash("admin123", 10);
   const admin = await db.user.upsert({
-    where: { email: "admin@ethoss.co.uk" },
+    where: { email: "admin@ethosss.com" },
     update: {},
     create: {
-      email: "admin@ethoss.co.uk",
-      name: "Ethoss Admin",
+      email: "admin@ethosss.com",
+      name: "Ethosss Admin",
       password: hashedPassword,
       role: "admin",
       isVerified: true,
-      bio: "Managing the Ethoss community and environmental mission.",
+      bio: "Managing the Ethosss community and environmental mission.",
     },
   });
 
@@ -522,10 +522,38 @@ async function seed() {
         area: "25 hectares",
       },
     }),
+    db.plantingSite.create({
+      data: {
+        name: "Michiru Natural Sanctuary",
+        region: "Blantyre, Malawi",
+        latitude: -15.7201637,
+        longitude: 34.9899165,
+        treesPlanted: 100,
+        species: JSON.stringify(["Native Malawi Species"]),
+        dateStarted: "2024-01-10",
+        status: "active",
+        description: "Community reforestation project in the Michiru mountain area.",
+        area: "1 hectare",
+      },
+    }),
+    db.plantingSite.create({
+      data: {
+        name: "Machichi Forest",
+        region: "Blantyre, Malawi",
+        latitude: -15.7170818,
+        longitude: 35.0561396,
+        treesPlanted: 100,
+        species: JSON.stringify(["Native Malawi Species"]),
+        dateStarted: "2024-02-15",
+        status: "active",
+        description: "Forest restoration and protection project near Blantyre.",
+        area: "1 hectare",
+      },
+    }),
   ]);
 
   console.log("✅ Seed data created successfully!");
-  console.log("👤 Admin: admin@ethoss.co.uk / admin123");
+  console.log("👤 Admin: admin@ethosss.com / admin123");
   console.log("👤 User: sarah@nature.co.uk / user123");
 }
 

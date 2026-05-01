@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useAppStore } from '@/lib/store'
+import { useRouter } from 'next/navigation'
 
 interface Hotel {
   id: string
@@ -27,7 +27,7 @@ interface Hotel {
 export function FeaturedHotels() {
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [loading, setLoading] = useState(true)
-  const { navigateTo } = useAppStore()
+  const router = useRouter()
 
   useEffect(() => {
     fetch('/api/hotels?featured=true&limit=6')
@@ -60,7 +60,7 @@ export function FeaturedHotels() {
           </div>
           <Button
             variant="outline"
-            onClick={() => navigateTo('hotels')}
+            onClick={() => router.push('/hotels')}
             className="shrink-0 group"
           >
             View All Hotels
@@ -161,7 +161,7 @@ export function FeaturedHotels() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigateTo('hotel-detail', hotel.id)}
+                      onClick={() => router.push(`/hotels/${hotel.id}`)}
                       className="mt-4 w-full group/btn"
                     >
                       View Details

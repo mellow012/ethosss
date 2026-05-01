@@ -15,14 +15,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 interface AddSiteDialogProps {
   onSuccess: () => void
@@ -43,6 +38,7 @@ export function AddSiteDialog({ onSuccess }: AddSiteDialogProps) {
     status: 'active',
     description: '',
     area: '',
+    image: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,6 +77,7 @@ export function AddSiteDialog({ onSuccess }: AddSiteDialogProps) {
           status: 'active',
           description: '',
           area: '',
+          image: '',
         })
       } else {
         const data = await res.json()
@@ -205,6 +202,14 @@ export function AddSiteDialog({ onSuccess }: AddSiteDialogProps) {
               type="date"
               value={formData.dateStarted}
               onChange={(e) => setFormData({ ...formData, dateStarted: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="image">Site Image</Label>
+            <ImageUpload
+              value={formData.image}
+              onChange={(url) => setFormData({ ...formData, image: url })}
+              onRemove={() => setFormData({ ...formData, image: '' })}
             />
           </div>
           <div className="space-y-2">

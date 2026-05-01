@@ -24,6 +24,18 @@ import { Separator } from '@/components/ui/separator'
 import { RichTextEditor } from '@/components/ui/editor'
 import { ImageUpload } from '@/components/ui/image-upload'
 
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
+
+interface Tag {
+  id: string
+  name: string
+  slug: string
+}
+
 export function PostEditor() {
   const { data: session } = useSession()
   const { setView, selectedId } = useAppStore()

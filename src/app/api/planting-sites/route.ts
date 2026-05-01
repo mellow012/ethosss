@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
       status,
       description,
       area,
+      image,
     } = body;
 
     if (!name || !region || latitude === undefined || longitude === undefined) {
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
         status: status || "active",
         description: description || "",
         area: area || "",
+        image: image || "",
       },
     });
 
@@ -71,6 +73,71 @@ export async function POST(request: NextRequest) {
     console.error("PlantingSites POST error:", error);
     return NextResponse.json(
       { error: "Failed to create planting site", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userRole = (session.user as any).role;
+    if (userRole !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const {
+      id,
+      name,
+      region,
+      latitude,
+      longitude,
+      treesPlanted,
+      species,
+      dateStarted,
+      status,
+      description,
+      area,
+      image,
+    } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (region !== undefined) updateData.region = region;
+    if (latitude !== undefined) updateData.latitude = parseFloat(latitude);
+    if (longitude !== undefined) updateData.longitude = parseFloat(longitude);
+    if (treesPlanted !== undefined) updateData.treesPlanted = parseInt(treesPlanted);
+    if (species !== undefined) updateData.species = JSON.stringify(species);
+    if (dateStarted !== undefined) updateData.dateStarted = dateStarted;
+    if (status !== undefined) updateData.status = status;
+    if (description !== undefined) updateData.description = description;
+    if (area !== undefined) updateData.area = area;
+    if (image !== undefined) updateData.image = image;
+
+    const site = await db.plantingSite.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json({ site });
+  } catch (error: any) {
+    console.error("PlantingSites PUT error:", error);
+    if (error.code === "P2025") {
+      return NextResponse.json(
+        { error: "Site not found" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Failed to update planting site", details: error.message },
       { status: 500 }
     );
   }

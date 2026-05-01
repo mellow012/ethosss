@@ -14,8 +14,8 @@ export async function POST() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    execSync("bun run prisma/seed.ts", {
-      cwd: "/home/z/my-project",
+    execSync("npx prisma db seed", {
+      cwd: process.cwd(),
       stdio: "pipe",
     });
 

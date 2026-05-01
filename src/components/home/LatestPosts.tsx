@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useAppStore } from '@/lib/store'
+import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 
 interface Post {
@@ -33,7 +33,7 @@ interface Post {
 export function LatestPosts() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
-  const { navigateTo } = useAppStore()
+  const router = useRouter()
 
   useEffect(() => {
     fetch('/api/posts?limit=3')
@@ -65,7 +65,7 @@ export function LatestPosts() {
           </div>
           <Button
             variant="outline"
-            onClick={() => navigateTo('blog')}
+            onClick={() => router.push('/blog')}
             className="shrink-0 group"
           >
             View All Posts
@@ -151,7 +151,7 @@ export function LatestPosts() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => navigateTo('blog-detail', post.id)}
+                      onClick={() => router.push(`/blog/${post.id}`)}
                       className="mt-4 text-forest hover:text-forest-dark p-0 h-auto group/btn"
                     >
                       Read More

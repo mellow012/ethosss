@@ -44,7 +44,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+.worklog.md
 
+.mini-services
+.examples
+.download
+.zscripts
 # typescript
 *.tsbuildinfo
 next-env.d.ts
