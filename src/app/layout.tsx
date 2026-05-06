@@ -18,34 +18,35 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Ethosss | Environmental Advocacy & Eco-Tourism',
+  title: 'Ethosss | Empowering Youth Through Green Innovation & Sustainable Travel',
   description:
-    'Join Ethosss in building a sustainable future through tree planting, eco-tourism, and community action in Malawi and globally. Discover eco-friendly hotels, enter environmental competitions, and read inspiring stories of conservation.',
+    'Ethosss is a purpose-driven social enterprise operating across Southern Africa, empowering young people through the green economy, eco-friendly tourism, and innovation. Join us in building a greener, more inclusive future for Africa.',
   keywords: [
     'Ethosss',
-    'environmental advocacy',
+    'youth empowerment',
+    'green economy',
+    'sustainable travel Southern Africa',
     'eco-tourism',
-    'tree planting Malawi',
-    'sustainable travel',
-    'conservation',
-    'green hotels',
-    'nature competitions',
+    'climate action',
+    'reforestation',
+    'green innovation',
+    'youth-led sustainability',
   ],
   authors: [{ name: 'Ethosss Team' }],
   icons: {
     icon: '/favicon.jpeg',
   },
   openGraph: {
-    title: 'Ethosss — See the World, Save the Planet',
+    title: 'Ethosss — Empowering Youth Through Green Innovation',
     description:
-      'Protecting Nature, Inspiring Change. Join Ethosss for eco-tourism, tree planting, and community action in Malawi and globally.',
+      'A purpose-driven social enterprise empowering young people through the green economy, eco-friendly tourism, and innovation across Southern Africa.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ethosss — See the World, Save the Planet',
+    title: 'Ethosss — Empowering Youth Through Green Innovation',
     description:
-      'Protecting Nature, Inspiring Change. Join Ethosss for eco-tourism, tree planting, and community action in Malawi and globally.',
+      'A purpose-driven social enterprise empowering young people through the green economy, eco-friendly tourism, and innovation across Southern Africa.',
   },
 }
 

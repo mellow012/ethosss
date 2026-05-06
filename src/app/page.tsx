@@ -2,12 +2,15 @@
 
 import { motion } from 'framer-motion'
 import { HeroSection } from '@/components/home/HeroSection'
+import { VisionSection } from '@/components/home/VisionSection'
+import { WhatWeDoCarousel } from '@/components/home/WhatWeDoCarousel'
 import { ImpactStats } from '@/components/home/ImpactStats'
 import { FeaturedHotels } from '@/components/home/FeaturedHotels'
 import { ActiveCompetitions } from '@/components/home/ActiveCompetitions'
 import { LatestPosts } from '@/components/home/LatestPosts'
 import { Testimonials } from '@/components/home/Testimonials'
 import { UpcomingEvents } from '@/components/home/UpcomingEvents'
+import { JoinMovement } from '@/components/home/JoinMovement'
 import dynamic from 'next/dynamic'
 
 const TreePlantingMap = dynamic(
@@ -37,6 +40,10 @@ export default function Home() {
       transition={pageTransition}
     >
       <HeroSection />
+      <VisionSection />
+      <div id="what-we-do">
+        <WhatWeDoCarousel />
+      </div>
       <ImpactStats />
       <UpcomingEvents />
       <LatestPosts />
@@ -44,6 +51,7 @@ export default function Home() {
       <TreePlantingMap />
       <FeaturedHotels />
       <Testimonials />
+      <JoinMovement />
     </motion.div>
   )
 }

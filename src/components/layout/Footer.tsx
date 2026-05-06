@@ -120,17 +120,21 @@ export function Footer() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
             {/* Brand */}
             <div className="sm:col-span-2 lg:col-span-1">
-              <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={() => handleNav('home')}
+                className="flex items-center group mb-4"
+              >
                 <img
-                  src={mounted && theme === 'dark' ? '/ethos-white-logo.jpeg' : '/ethos-logo.jpeg'}
+                  src={mounted && theme === 'dark' ? '/ethos-logo.jpeg' : '/ethos-white-logo.jpeg'}
                   alt="Ethosss"
-                  className="h-8 w-auto object-contain"
+                  className="h-8 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
                 />
-              </div>
+              </button>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                See the World, Save the Planet. Protecting nature and inspiring
-                change through community-driven environmental advocacy,
-                eco-tourism, and sustainable practices.
+                Empowering youth through green innovation and sustainable travel.
+                A purpose-driven social enterprise committed to the green
+                economy, eco-friendly tourism, and innovation across Southern
+                Africa.
               </p>
               <div className="mt-4 space-y-2 text-sm text-muted-foreground">
                 <p className="flex items-center gap-2">
@@ -208,13 +212,13 @@ export function Footer() {
                 Our Mission
               </h4>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Every tree planted, every eco-choice made, and every community
-                action brings us closer to a greener future. Together, we can make
-                a lasting impact on our planet.
+                To cultivate a generation of environmentally conscious leaders
+                who drive sustainable growth, innovation, and regional
+                integration across Africa.
               </p>
               <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 text-forest" />
-                <span>Active globally and in Malawi</span>
+                <span>Operating across Southern Africa</span>
               </div>
             </div>
           </div>

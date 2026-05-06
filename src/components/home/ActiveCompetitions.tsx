@@ -121,7 +121,7 @@ export function ActiveCompetitions() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto md:overflow-x-visible pb-6 md:pb-0 snap-x snap-mandatory scrollbar-hide">
             {competitions.map((comp, index) => {
               const status = getStatus(comp)
               const EntryIcon = entryTypeIcons[comp.entryType] || FileText
@@ -145,6 +145,7 @@ export function ActiveCompetitions() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="min-w-[280px] sm:min-w-[320px] md:min-w-0 snap-center"
                 >
                   <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                     <div className="relative overflow-hidden">

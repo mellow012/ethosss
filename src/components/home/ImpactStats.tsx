@@ -94,7 +94,7 @@ export function ImpactStats() {
           </h2>
           <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
             Together with our community, we are making a measurable difference
-            for the environment across the United Kingdom.
+            for the environment across Southern Africa.
           </p>
         </motion.div>
 

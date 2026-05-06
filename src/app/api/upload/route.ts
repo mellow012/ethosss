@@ -1,9 +1,21 @@
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
 
+// Allowed file types and max size (5MB)
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const MAX_SIZE = 5 * 1024 * 1024 
+
 export async function POST(request: Request) {
   try {
+    // 1. Auth Check: Only logged-in users can upload
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
 
@@ -11,11 +23,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
+    // 2. File Type Validation
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { error: 'Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed.' },
+        { status: 400 }
+      )
+    }
+
+    // 3. File Size Validation
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json(
+        { error: 'File size too large. Maximum size is 5MB.' },
+        { status: 400 }
+      )
+    }
+
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Generate unique filename
-    const extension = file.name.split('.').pop()
+    // Generate unique filename with original extension or fallback to jpg
+    const extension = file.name.split('.').pop() || 'jpg'
     const filename = `${uuidv4()}.${extension}`
     
     // Upload to Supabase Storage

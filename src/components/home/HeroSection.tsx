@@ -51,10 +51,10 @@ export function HeroSection() {
   }
 
   const content = {
-    subtitle: settings.hero_subtitle || 'Building a greener tomorrow, today',
-    eyebrow: settings.hero_eyebrow || 'See the World, Save the Planet',
-    title: settings.hero_title || 'Protecting Nature, Inspiring Change',
-    description: settings.hero_description || 'Join Ethosss in building a sustainable future through tree planting, eco-tourism, and community action across the UK'
+    subtitle: settings.hero_subtitle || 'Sustainable Travel & Green Economy Across Southern Africa',
+    eyebrow: settings.hero_eyebrow || 'Purpose-Driven. Youth-Led. Green.',
+    title: settings.hero_title || 'Ethosss — Empowering Youth Through Green Innovation',
+    description: settings.hero_description || 'We are a purpose-driven social enterprise operating across Southern Africa, committed to empowering young people through the green economy, eco-friendly tourism, and innovation.'
   }
 
   return (
@@ -191,7 +191,7 @@ export function HeroSection() {
               onClick={handleJoin}
               className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:text-white px-8 py-6 text-base"
             >
-              Join Our Mission
+              Join the Movement
             </Button>
           </motion.div>
         </motion.div>

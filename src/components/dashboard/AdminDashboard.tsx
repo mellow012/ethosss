@@ -947,7 +947,7 @@ export function AdminDashboard() {
                             <div key={user.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
                               <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-full bg-forest/10 flex items-center justify-center text-forest font-bold shrink-0">
-                                  {user.image ? <img src={user.image} className="w-full h-full rounded-full object-cover" /> : user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                                  {user.image ? <img src={user.image} alt={user.name || 'User'} className="w-full h-full rounded-full object-cover" /> : user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
                                   <h3 className="font-bold text-sm">{user.name || 'Anonymous User'}</h3>

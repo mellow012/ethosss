@@ -53,9 +53,9 @@ export function FeaturedHotels() {
               <span className="text-gradient-forest">Eco Hotels</span>
             </h2>
             <p className="mt-2 text-muted-foreground max-w-xl">
-              Discover hand-picked sustainable accommodations across the UK that
-              prioritise environmental responsibility without compromising
-              comfort.
+              Discover hand-picked sustainable accommodations across Southern Africa
+            that prioritise environmental responsibility without compromising
+            comfort.
             </p>
           </div>
           <Button
@@ -69,9 +69,9 @@ export function FeaturedHotels() {
         </motion.div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-x-auto md:overflow-x-visible pb-6 md:pb-0">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden">
+              <Card key={i} className="min-w-[280px] sm:min-w-[320px] md:min-w-0 overflow-hidden">
                 <Skeleton className="h-48 w-full" />
                 <CardContent className="p-5 space-y-3">
                   <Skeleton className="h-6 w-3/4" />
@@ -93,7 +93,7 @@ export function FeaturedHotels() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-x-auto md:overflow-x-visible pb-6 md:pb-0 snap-x snap-mandatory scrollbar-hide">
             {hotels.map((hotel, index) => (
               <motion.div
                 key={hotel.id}
@@ -101,6 +101,7 @@ export function FeaturedHotels() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="min-w-[280px] sm:min-w-[320px] md:min-w-0 snap-center"
               >
                 <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                   <div className="relative overflow-hidden">
