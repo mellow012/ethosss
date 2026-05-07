@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,11 +23,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert: if email already exists and is inactive, reactivate it
-    const newsletter = await db.newsletter.upsert({
-      where: { email },
-      update: { active: true },
-      create: { email, active: true },
-    });
+    const { data: newsletter, error } = await supabaseAdmin
+      .from('Newsletter')
+      .upsert({ email, active: true, updatedAt: new Date().toISOString() }, { onConflict: 'email' })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ newsletter }, { status: 201 });
   } catch (error: any) {

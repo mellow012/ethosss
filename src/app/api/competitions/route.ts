@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET(request: NextRequest) {
   try {
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
     const { data: competition, error } = await supabaseAdmin
       .from('Competition')
       .insert({
+        id: uuidv4(),
         title,
         slug,
         description,
@@ -106,6 +108,8 @@ export async function POST(request: NextRequest) {
         conditionType,
         conditionValue,
         totalRounds: totalRounds ?? 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select()
       .single();
@@ -171,6 +175,7 @@ export async function PUT(request: NextRequest) {
     if (conditionType !== undefined) updateData.conditionType = conditionType;
     if (conditionValue !== undefined) updateData.conditionValue = conditionValue;
     if (totalRounds !== undefined) updateData.totalRounds = totalRounds;
+    updateData.updatedAt = new Date().toISOString();
 
     const { data: competition, error } = await supabaseAdmin
       .from('Competition')

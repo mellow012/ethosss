@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET() {
   try {
@@ -45,7 +46,13 @@ export async function POST(request: NextRequest) {
 
     const { data: tag, error } = await supabaseAdmin
       .from('Tag')
-      .insert({ name, slug })
+      .insert({ 
+        id: uuidv4(), 
+        name, 
+        slug,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
       .select('*, posts:PostTag(count)')
       .single();
 
@@ -81,6 +88,7 @@ export async function PUT(request: NextRequest) {
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (slug !== undefined) updateData.slug = slug;
+    updateData.updatedAt = new Date().toISOString();
 
     const { data: tag, error } = await supabaseAdmin
       .from('Tag')

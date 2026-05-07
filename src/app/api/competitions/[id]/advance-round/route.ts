@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 /**
  * POST /api/competitions/[id]/advance-round
@@ -27,15 +27,14 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const competition = await db.competition.findUnique({
-      where: { id },
-      include: {
-        rounds: { orderBy: { roundNumber: "asc" } },
-        entries: true,
-      },
-    });
+    const { data: competition, error: compError } = await supabaseAdmin
+      .from('Competition')
+      .select('*, rounds:CompetitionRound(*), entries:CompetitionEntry(*)')
+      .eq('id', id)
+      .order('roundNumber', { foreignTable: 'CompetitionRound', ascending: true })
+      .single();
 
-    if (!competition) {
+    if (compError || !competition) {
       return NextResponse.json({ error: "Competition not found" }, { status: 404 });
     }
 
@@ -44,15 +43,15 @@ export async function POST(
     }
 
     const currentRoundNum = competition.currentRound;
-    const currentRound = competition.rounds.find(r => r.roundNumber === currentRoundNum);
-    const nextRound = competition.rounds.find(r => r.roundNumber === currentRoundNum + 1);
+    const currentRound = competition.rounds.find((r: any) => r.roundNumber === currentRoundNum);
+    const nextRound = competition.rounds.find((r: any) => r.roundNumber === currentRoundNum + 1);
 
     // Get approved entries for the current round
     const approvedEntries = competition.entries.filter(
-      e => e.round === currentRoundNum && e.status === "approved"
+      (e: any) => e.round === currentRoundNum && e.status === "approved"
     );
     const pendingEntries = competition.entries.filter(
-      e => e.round === currentRoundNum && e.status === "pending"
+      (e: any) => e.round === currentRoundNum && e.status === "pending"
     );
 
     if (pendingEntries.length > 0) {
@@ -76,44 +75,44 @@ export async function POST(
       // === FINAL ROUND: Pick a random winner ===
       const winnerEntry = approvedEntries[Math.floor(Math.random() * approvedEntries.length)];
 
-      await db.$transaction([
-        // Mark winner
-        db.competitionEntry.update({
-          where: { id: winnerEntry.id },
-          data: { status: "winner", reviewedAt: new Date() },
-        }),
-        // Mark others as eliminated
-        db.competitionEntry.updateMany({
-          where: {
-            competitionId: id,
-            round: currentRoundNum,
-            status: "approved",
-            id: { not: winnerEntry.id },
-          },
-          data: { status: "eliminated" },
-        }),
-        // Close the competition
-        db.competition.update({
-          where: { id },
-          data: {
-            isActive: false,
-            winnerId: winnerEntry.userId,
-          },
-        }),
-        // Mark current round as completed
-        ...(currentRound ? [
-          db.competitionRound.update({
-            where: { id: currentRound.id },
-            data: { status: "completed" },
-          })
-        ] : []),
-      ]);
+      // Mark winner
+      await supabaseAdmin
+        .from('CompetitionEntry')
+        .update({ status: "winner", reviewedAt: new Date().toISOString() })
+        .eq('id', winnerEntry.id);
+
+      // Mark others as eliminated
+      await supabaseAdmin
+        .from('CompetitionEntry')
+        .update({ status: "eliminated" })
+        .eq('competitionId', id)
+        .eq('round', currentRoundNum)
+        .eq('status', 'approved')
+        .neq('id', winnerEntry.id);
+
+      // Close the competition
+      await supabaseAdmin
+        .from('Competition')
+        .update({
+          isActive: false,
+          winnerId: winnerEntry.userId,
+        })
+        .eq('id', id);
+
+      // Mark current round as completed
+      if (currentRound) {
+        await supabaseAdmin
+          .from('CompetitionRound')
+          .update({ status: "completed" })
+          .eq('id', currentRound.id);
+      }
 
       // Fetch winner details
-      const winner = await db.user.findUnique({
-        where: { id: winnerEntry.userId },
-        select: { id: true, name: true, email: true, image: true },
-      });
+      const { data: winner } = await supabaseAdmin
+        .from('User')
+        .select('id, name, email, image')
+        .eq('id', winnerEntry.userId)
+        .single();
 
       return NextResponse.json({
         status: "winner_selected",
@@ -122,43 +121,41 @@ export async function POST(
       });
     } else {
       // === ADVANCE TO NEXT ROUND ===
-      await db.$transaction([
-        // Mark approved entries as "advanced"
-        db.competitionEntry.updateMany({
-          where: {
-            competitionId: id,
-            round: currentRoundNum,
-            status: "approved",
-          },
-          data: { status: "advanced" },
-        }),
-        // Mark rejected entries as "eliminated"  
-        db.competitionEntry.updateMany({
-          where: {
-            competitionId: id,
-            round: currentRoundNum,
-            status: "rejected",
-          },
-          data: { status: "eliminated" },
-        }),
-        // Mark current round as completed
-        ...(currentRound ? [
-          db.competitionRound.update({
-            where: { id: currentRound.id },
-            data: { status: "completed" },
-          })
-        ] : []),
-        // Activate next round
-        db.competitionRound.update({
-          where: { id: nextRound.id },
-          data: { status: "active" },
-        }),
-        // Advance competition to next round
-        db.competition.update({
-          where: { id },
-          data: { currentRound: currentRoundNum + 1 },
-        }),
-      ]);
+      // Mark approved entries as "advanced"
+      await supabaseAdmin
+        .from('CompetitionEntry')
+        .update({ status: "advanced" })
+        .eq('competitionId', id)
+        .eq('round', currentRoundNum)
+        .eq('status', 'approved');
+
+      // Mark rejected entries as "eliminated"
+      await supabaseAdmin
+        .from('CompetitionEntry')
+        .update({ status: "eliminated" })
+        .eq('competitionId', id)
+        .eq('round', currentRoundNum)
+        .eq('status', 'rejected');
+
+      // Mark current round as completed
+      if (currentRound) {
+        await supabaseAdmin
+          .from('CompetitionRound')
+          .update({ status: "completed" })
+          .eq('id', currentRound.id);
+      }
+
+      // Activate next round
+      await supabaseAdmin
+        .from('CompetitionRound')
+        .update({ status: "active" })
+        .eq('id', nextRound.id);
+
+      // Advance competition to next round
+      await supabaseAdmin
+        .from('Competition')
+        .update({ currentRound: currentRoundNum + 1 })
+        .eq('id', id);
 
       return NextResponse.json({
         status: "round_advanced",

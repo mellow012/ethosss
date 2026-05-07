@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
 
 // Allowed file types and max size (5MB)
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const filename = `${uuidv4()}.${extension}`
     
     // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseAdmin.storage
       .from('ethoss-media')
       .upload(filename, buffer, {
         contentType: file.type,
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     // Get Public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from('ethoss-media')
       .getPublicUrl(filename)
     

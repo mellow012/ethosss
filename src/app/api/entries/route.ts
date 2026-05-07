@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET(request: NextRequest) {
   try {
@@ -127,11 +128,14 @@ export async function POST(request: NextRequest) {
     const { data: entry, error: insertError } = await supabaseAdmin
       .from('CompetitionEntry')
       .insert({
+        id: uuidv4(),
         competitionId,
         userId: currentUserId,
         content,
         imageUrl,
         status: "pending",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select(`
         *,
@@ -196,6 +200,7 @@ export async function PUT(request: NextRequest) {
         status,
         reviewedAt: new Date().toISOString(),
         reviewedBy: (session.user as any).id,
+        updatedAt: new Date().toISOString(),
       })
       .eq('id', id)
       .select(`

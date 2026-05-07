@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
     const { data: event, error } = await supabaseAdmin
       .from('Event')
       .insert({
+        id: uuidv4(),
         title,
         description,
         date: new Date(date).toISOString(),
@@ -60,6 +62,8 @@ export async function POST(request: NextRequest) {
         image,
         link,
         isActive: isActive !== undefined ? isActive : true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select()
       .single();
@@ -98,6 +102,7 @@ export async function PUT(request: NextRequest) {
     if (image !== undefined) updateData.image = image;
     if (link !== undefined) updateData.link = link;
     if (isActive !== undefined) updateData.isActive = isActive;
+    updateData.updatedAt = new Date().toISOString();
 
     const { data: event, error } = await supabaseAdmin
       .from('Event')

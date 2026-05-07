@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,22 +18,18 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     const isAdmin = (session?.user as any)?.role === "admin";
 
-    const where: any = { postId };
+    let query = supabaseAdmin
+      .from('Comment')
+      .select('*, author:User(id, name, email, image)')
+      .eq('postId', postId);
 
-    // Non-admins only see approved comments
     if (!isAdmin) {
-      where.approved = true;
+      query = query.eq('approved', true);
     }
 
-    const comments = await db.comment.findMany({
-      where,
-      include: {
-        author: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const { data: comments, error } = await query.order('createdAt', { ascending: false });
+
+    if (error) throw error;
 
     return NextResponse.json({ comments });
   } catch (error: any) {
@@ -63,24 +59,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the post exists
-    const post = await db.post.findUnique({ where: { id: postId } });
-    if (!post) {
+    const { data: post, error: postError } = await supabaseAdmin
+      .from('Post')
+      .select('id')
+      .eq('id', postId)
+      .single();
+    
+    if (postError || !post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    const comment = await db.comment.create({
-      data: {
+    const { data: comment, error } = await supabaseAdmin
+      .from('Comment')
+      .insert({
         content,
         authorId: (session.user as any).id,
         postId,
-        approved: false, // Comments require approval by default
-      },
-      include: {
-        author: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-      },
-    });
+        approved: false,
+      })
+      .select('*, author:User(id, name, email, image)')
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error: any) {
@@ -113,15 +113,14 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const comment = await db.comment.update({
-      where: { id },
-      data: { approved },
-      include: {
-        author: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-      },
-    });
+    const { data: comment, error } = await supabaseAdmin
+      .from('Comment')
+      .update({ approved })
+      .eq('id', id)
+      .select('*, author:User(id, name, email, image)')
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ comment });
   } catch (error: any) {
@@ -154,11 +153,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get the comment to check ownership
-    const comment = await db.comment.findUnique({
-      where: { id },
-    });
+    const { data: comment, error: fetchError } = await supabaseAdmin
+      .from('Comment')
+      .select('id, authorId')
+      .eq('id', id)
+      .single();
 
-    if (!comment) {
+    if (fetchError || !comment) {
       return NextResponse.json(
         { error: "Comment not found" },
         { status: 404 }
@@ -176,9 +177,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await db.comment.delete({
-      where: { id },
-    });
+    const { error } = await supabaseAdmin
+      .from('Comment')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     return NextResponse.json({ message: "Comment deleted successfully" });
   } catch (error: any) {

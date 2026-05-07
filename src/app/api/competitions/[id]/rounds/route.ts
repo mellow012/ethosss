@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 // GET all rounds for a competition
 export async function GET(
@@ -10,10 +10,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const rounds = await db.competitionRound.findMany({
-      where: { competitionId: id },
-      orderBy: { roundNumber: "asc" },
-    });
+    const { data: rounds, error } = await supabaseAdmin
+      .from('CompetitionRound')
+      .select('*')
+      .eq('competitionId', id)
+      .order('roundNumber', { ascending: true });
+
+    if (error) throw error;
 
     return NextResponse.json({ rounds });
   } catch (error: any) {
@@ -41,31 +44,42 @@ export async function POST(
     const { title, description, objective, isFinal, startDate, endDate } = body;
 
     // Get next round number
-    const lastRound = await db.competitionRound.findFirst({
-      where: { competitionId: id },
-      orderBy: { roundNumber: "desc" },
-    });
+    const { data: lastRound, error: fetchError } = await supabaseAdmin
+      .from('CompetitionRound')
+      .select('roundNumber')
+      .eq('competitionId', id)
+      .order('roundNumber', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
     const nextRoundNumber = (lastRound?.roundNumber || 0) + 1;
 
-    const round = await db.competitionRound.create({
-      data: {
+    const { data: round, error: createError } = await supabaseAdmin
+      .from('CompetitionRound')
+      .insert({
         competitionId: id,
         roundNumber: nextRoundNumber,
         title: title || `Round ${nextRoundNumber}`,
         description,
         objective,
         isFinal: isFinal || false,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
+        startDate: startDate ? new Date(startDate).toISOString() : null,
+        endDate: endDate ? new Date(endDate).toISOString() : null,
         status: nextRoundNumber === 1 ? "active" : "upcoming",
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (createError) throw createError;
 
     // Update competition totalRounds
-    await db.competition.update({
-      where: { id },
-      data: { totalRounds: nextRoundNumber },
-    });
+    const { error: updateError } = await supabaseAdmin
+      .from('Competition')
+      .update({ totalRounds: nextRoundNumber })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
 
     return NextResponse.json({ round }, { status: 201 });
   } catch (error: any) {

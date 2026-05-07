@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET(request: NextRequest) {
   try {
@@ -106,6 +107,7 @@ export async function POST(request: NextRequest) {
     const { data: post, error } = await supabaseAdmin
       .from('Post')
       .insert({
+        id: uuidv4(),
         title,
         slug,
         content,
@@ -118,6 +120,8 @@ export async function POST(request: NextRequest) {
         featured: featured ?? false,
         authorId: (session.user as any).id,
         categoryId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select(`
         *,
@@ -184,6 +188,7 @@ export async function PUT(request: NextRequest) {
     if (published !== undefined) updateData.published = published;
     if (featured !== undefined) updateData.featured = featured;
     if (categoryId !== undefined) updateData.categoryId = categoryId;
+    updateData.updatedAt = new Date().toISOString();
 
     const { data: post, error } = await supabaseAdmin
       .from('Post')

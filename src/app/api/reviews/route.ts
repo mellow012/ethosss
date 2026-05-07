@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,15 +14,23 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify hotel exists
-    const hotel = await db.hotel.findUnique({ where: { id: hotelId } });
-    if (!hotel) {
+    const { data: hotel, error: hotelError } = await supabaseAdmin
+      .from('Hotel')
+      .select('id')
+      .eq('id', hotelId)
+      .single();
+
+    if (hotelError || !hotel) {
       return NextResponse.json({ error: "Hotel not found" }, { status: 404 });
     }
 
-    const reviews = await db.hotelReview.findMany({
-      where: { hotelId },
-      orderBy: { createdAt: "desc" },
-    });
+    const { data: reviews, error } = await supabaseAdmin
+      .from('HotelReview')
+      .select('*')
+      .eq('hotelId', hotelId)
+      .order('createdAt', { ascending: false });
+
+    if (error) throw error;
 
     return NextResponse.json({ reviews });
   } catch (error: any) {
@@ -54,19 +62,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify hotel exists
-    const hotel = await db.hotel.findUnique({ where: { id: hotelId } });
-    if (!hotel) {
+    const { data: hotel, error: hotelError } = await supabaseAdmin
+      .from('Hotel')
+      .select('id')
+      .eq('id', hotelId)
+      .single();
+
+    if (hotelError || !hotel) {
       return NextResponse.json({ error: "Hotel not found" }, { status: 404 });
     }
 
-    const review = await db.hotelReview.create({
-      data: {
+    const { data: review, error } = await supabaseAdmin
+      .from('HotelReview')
+      .insert({
         rating,
         content,
         authorName,
         hotelId,
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ review }, { status: 201 });
   } catch (error: any) {
@@ -99,10 +116,14 @@ export async function PUT(request: NextRequest) {
     if (content !== undefined) updateData.content = content;
     if (authorName !== undefined) updateData.authorName = authorName;
 
-    const review = await db.hotelReview.update({
-      where: { id },
-      data: updateData,
-    });
+    const { data: review, error } = await supabaseAdmin
+      .from('HotelReview')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ review });
   } catch (error: any) {
@@ -129,9 +150,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    await db.hotelReview.delete({
-      where: { id },
-    });
+    const { error } = await supabaseAdmin
+      .from('HotelReview')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     return NextResponse.json({ message: "Review deleted successfully" });
   } catch (error: any) {

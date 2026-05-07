@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
     const { data: site, error } = await supabaseAdmin
       .from('PlantingSite')
       .insert({
+        id: uuidv4(),
         name,
         region,
         latitude: parseFloat(latitude),
@@ -69,6 +71,8 @@ export async function POST(request: NextRequest) {
         description: description || "",
         area: area || "",
         image: image || "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select()
       .single();
@@ -128,6 +132,7 @@ export async function PUT(request: NextRequest) {
     if (description !== undefined) updateData.description = description;
     if (area !== undefined) updateData.area = area;
     if (image !== undefined) updateData.image = image;
+    updateData.updatedAt = new Date().toISOString();
 
     const { data: site, error } = await supabaseAdmin
       .from('PlantingSite')

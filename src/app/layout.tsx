@@ -7,15 +7,21 @@ import { ThemeProvider } from '@/providers/ThemeProvider'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
+// Font configuration commented out due to connectivity issues during build
+// const geistSans = Geist({
+//   variable: '--font-geist-sans',
+//   subsets: ['latin'],
+// })
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
+// const geistMono = Geist_Mono({
+//   variable: '--font-geist-mono',
+//   subsets: ['latin'],
+// })
+
+// Standard font fallbacks are now handled in globals.css
+const geistSans = { variable: "" }
+const geistMono = { variable: "" }
+
 
 export const metadata: Metadata = {
   title: 'Ethosss | Empowering Youth Through Green Innovation & Sustainable Travel',
