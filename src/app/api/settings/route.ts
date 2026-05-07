@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET() {
   try {
-    const settings = await db.siteSetting.findMany();
-    const settingsMap = settings.reduce((acc: any, curr) => {
+    const { data: settings, error } = await supabaseAdmin
+      .from('SiteSetting')
+      .select('*');
+
+    if (error) throw error;
+
+    const settingsMap = (settings || []).reduce((acc: any, curr) => {
       acc[curr.key] = curr.value;
       return acc;
     }, {});
@@ -35,11 +41,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Key is required" }, { status: 400 });
     }
 
-    const setting = await db.siteSetting.upsert({
-      where: { key },
-      update: { value: String(value) },
-      create: { key, value: String(value) },
-    });
+    // Upsert using Supabase
+    const { data: setting, error } = await supabaseAdmin
+      .from('SiteSetting')
+      .upsert({ 
+        key, 
+        value: String(value),
+        updatedAt: new Date().toISOString()
+      }, {
+        onConflict: 'key'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ setting });
   } catch (error: any) {

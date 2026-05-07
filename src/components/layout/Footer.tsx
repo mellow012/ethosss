@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
+import Link from 'next/link'
 import {
   TreePine,
   Leaf,
@@ -17,27 +18,25 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useAppStore } from '@/lib/store'
 import { toast } from 'sonner'
 
 const quickLinks = [
-  { label: 'Home', view: 'home' as const },
-  { label: 'Blog', view: 'blog' as const },
-  { label: 'Eco Hotels', view: 'hotels' as const },
-  { label: 'Competitions', view: 'competitions' as const },
+  { label: 'Home', href: '/' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'Eco Hotels', href: '/hotels' },
+  { label: 'Competitions', href: '/competitions' },
 ]
 
 const resourceLinks = [
-  { label: 'Tree Planting Guide', href: '#' },
-  { label: 'Carbon Calculator', href: '#' },
-  { label: 'Conservation Tips', href: '#' },
-  { label: 'Volunteer Opportunities', href: '#' },
+  { label: 'Tree Planting Guide', href: '/blog' },
+  { label: 'Carbon Calculator', href: '/blog' },
+  { label: 'Conservation Tips', href: '/blog' },
+  { label: 'Volunteer Opportunities', href: '/blog' },
 ]
 
 export function Footer() {
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const { setView } = useAppStore()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -67,11 +66,6 @@ export function Footer() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleNav = (view: 'home' | 'blog' | 'hotels' | 'competitions') => {
-    setView(view)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
@@ -120,8 +114,8 @@ export function Footer() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
             {/* Brand */}
             <div className="sm:col-span-2 lg:col-span-1">
-              <button
-                onClick={() => handleNav('home')}
+              <Link
+                href="/"
                 className="flex items-center group mb-4"
               >
                 <img
@@ -129,7 +123,7 @@ export function Footer() {
                   alt="Ethosss"
                   className="h-8 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
                 />
-              </button>
+              </Link>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Empowering youth through green innovation and sustainable travel.
                 A purpose-driven social enterprise committed to the green
@@ -171,14 +165,14 @@ export function Footer() {
               </h4>
               <ul className="space-y-2.5">
                 {quickLinks.map((link) => (
-                  <li key={link.view}>
-                    <button
-                      onClick={() => handleNav(link.view)}
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
                       className="text-sm text-muted-foreground hover:text-forest transition-colors flex items-center gap-1.5 group"
                     >
                       {link.label}
                       <ArrowRight className="h-3 w-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                    </button>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -193,13 +187,13 @@ export function Footer() {
               <ul className="space-y-2.5">
                 {resourceLinks.map((link) => (
                   <li key={link.label}>
-                    <a
+                    <Link
                       href={link.href}
                       className="text-sm text-muted-foreground hover:text-forest transition-colors flex items-center gap-1.5 group"
                     >
                       {link.label}
                       <ArrowRight className="h-3 w-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

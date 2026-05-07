@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,36 +10,38 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const active = searchParams.get("active");
 
-    const where: any = {};
+    let query = supabaseAdmin
+      .from('Competition')
+      .select('*, entries:CompetitionEntry(count)', { count: 'exact' });
 
     if (active !== null) {
-      where.isActive = active === "true";
+      query = query.eq('isActive', active === "true");
     }
 
-    const skip = (page - 1) * limit;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
 
-    const [competitions, total] = await Promise.all([
-      db.competition.findMany({
-        where,
-        include: {
-          _count: {
-            select: { entries: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      db.competition.count({ where }),
-    ]);
+    const { data: competitions, count: total, error } = await query
+      .order('createdAt', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    // Format the count to match the expected structure if needed
+    const formattedCompetitions = (competitions || []).map(comp => ({
+      ...comp,
+      _count: {
+        entries: comp.entries?.[0]?.count || 0
+      }
+    }));
 
     return NextResponse.json({
-      competitions,
+      competitions: formattedCompetitions,
       pagination: {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil((total || 0) / limit),
       },
     });
   } catch (error: any) {
@@ -87,8 +89,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const competition = await db.competition.create({
-      data: {
+    const { data: competition, error } = await supabaseAdmin
+      .from('Competition')
+      .insert({
         title,
         slug,
         description,
@@ -96,25 +99,22 @@ export async function POST(request: NextRequest) {
         coverImage,
         prize,
         entryType: entryType ?? "story",
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
         isActive: isActive ?? true,
         maxEntries,
         conditionType,
         conditionValue,
         totalRounds: totalRounds ?? 1,
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ competition }, { status: 201 });
   } catch (error: any) {
     console.error("Competitions POST error:", error);
-    if (error.code === "P2002") {
-      return NextResponse.json(
-        { error: "A competition with this slug already exists" },
-        { status: 409 }
-      );
-    }
     return NextResponse.json(
       { error: "Failed to create competition", details: error.message },
       { status: 500 }
@@ -164,34 +164,26 @@ export async function PUT(request: NextRequest) {
     if (coverImage !== undefined) updateData.coverImage = coverImage;
     if (prize !== undefined) updateData.prize = prize;
     if (entryType !== undefined) updateData.entryType = entryType;
-    if (startDate !== undefined) updateData.startDate = new Date(startDate);
-    if (endDate !== undefined) updateData.endDate = new Date(endDate);
+    if (startDate !== undefined) updateData.startDate = new Date(startDate).toISOString();
+    if (endDate !== undefined) updateData.endDate = new Date(endDate).toISOString();
     if (isActive !== undefined) updateData.isActive = isActive;
     if (maxEntries !== undefined) updateData.maxEntries = maxEntries;
     if (conditionType !== undefined) updateData.conditionType = conditionType;
     if (conditionValue !== undefined) updateData.conditionValue = conditionValue;
     if (totalRounds !== undefined) updateData.totalRounds = totalRounds;
 
-    const competition = await db.competition.update({
-      where: { id },
-      data: updateData,
-    });
+    const { data: competition, error } = await supabaseAdmin
+      .from('Competition')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ competition });
   } catch (error: any) {
     console.error("Competitions PUT error:", error);
-    if (error.code === "P2002") {
-      return NextResponse.json(
-        { error: "A competition with this slug already exists" },
-        { status: 409 }
-      );
-    }
-    if (error.code === "P2025") {
-      return NextResponse.json(
-        { error: "Competition not found" },
-        { status: 404 }
-      );
-    }
     return NextResponse.json(
       { error: "Failed to update competition", details: error.message },
       { status: 500 }
@@ -217,19 +209,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    await db.competition.delete({
-      where: { id },
-    });
+    const { error } = await supabaseAdmin
+      .from('Competition')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     return NextResponse.json({ message: "Competition deleted successfully" });
   } catch (error: any) {
     console.error("Competitions DELETE error:", error);
-    if (error.code === "P2025") {
-      return NextResponse.json(
-        { error: "Competition not found" },
-        { status: 404 }
-      );
-    }
     return NextResponse.json(
       { error: "Failed to delete competition", details: error.message },
       { status: 500 }

@@ -30,6 +30,8 @@ import {
   ExternalLink,
   Star,
   Leaf,
+  Menu,
+  Target,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -73,6 +75,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetTrigger, 
+  SheetTitle,
+  SheetHeader
+} from '@/components/ui/sheet'
 import { useRouter } from 'next/navigation'
 import { useAppStore } from '@/lib/store'
 import { toast } from 'sonner'
@@ -80,7 +89,8 @@ import { format } from 'date-fns'
 import { AddSiteDialog } from './AddSiteDialog'
 import { AddHotelDialog } from './AddHotelDialog'
 import { AddCompetitionDialog } from './AddCompetitionDialog'
-import { AddPostDialog } from './AddPostDialog'
+import { AddContentDialog } from './AddPostDialog'
+import { AddSuccessStoryDialog } from './AddSuccessStoryDialog'
 import { SettingsTab } from './SettingsTab'
 
 
@@ -137,6 +147,17 @@ interface UserItem {
   _count: { posts: number; comments: number; entries: number }
 }
 
+interface SuccessStory {
+  id: string
+  title: string
+  businessName: string
+  category: string
+  impact: string
+  description: string
+  featured: boolean
+  createdAt: string
+}
+
 interface PlantingSite {
   id: string
   name: string
@@ -158,11 +179,13 @@ export function AdminDashboard() {
 
   // Data
   const [posts, setPosts] = useState<Post[]>([])
+  const [events, setEvents] = useState<any[]>([])
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
   const [users, setUsers] = useState<UserItem[]>([])
   const [sites, setSites] = useState<PlantingSite[]>([])
+  const [stories, setStories] = useState<SuccessStory[]>([])
   const [analytics, setAnalytics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -181,6 +204,8 @@ export function AdminDashboard() {
   const [editingHotel, setEditingHotel] = useState<Hotel | null>(null)
   const [editingSite, setEditingSite] = useState<PlantingSite | null>(null)
   const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null)
+  const [editingStory, setEditingStory] = useState<SuccessStory | null>(null)
+  const [storyEditOpen, setStoryEditOpen] = useState(false)
 
   // Entry review dialog
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
@@ -201,21 +226,25 @@ export function AdminDashboard() {
         return res.ok ? res.json() : { error: true };
       };
 
-      const [postsData, hotelsData, compsData, usersData, sitesData, entriesData, analyticsData] = await Promise.all([
+      const [postsData, eventsData, hotelsData, compsData, usersData, sitesData, entriesData, storiesData, analyticsData] = await Promise.all([
         fetchJson('/api/posts?all=true&limit=100'),
+        fetchJson('/api/events?all=true&limit=100'),
         fetchJson('/api/hotels?limit=100'),
         fetchJson('/api/competitions?limit=100'),
         fetchJson('/api/users?limit=100'),
         fetchJson('/api/planting-sites'),
         fetchJson('/api/entries?limit=500'), // Fetch all entries once
+        fetchJson('/api/success-stories?limit=100'),
         fetchJson('/api/admin/analytics')
       ])
 
       setPosts(postsData.posts || [])
+      setEvents(eventsData.events || [])
       setHotels(hotelsData.hotels || [])
       setCompetitions(compsData.competitions || [])
       setUsers(usersData.users || [])
       setSites(sitesData.sites || [])
+      setStories(storiesData.stories || [])
       setAnalytics(analyticsData.error ? null : analyticsData)
 
       // Optimized: Map competition names to entries locally instead of re-fetching per competition
@@ -245,9 +274,11 @@ export function AdminDashboard() {
     try {
       const endpoints: Record<string, string> = {
         post: '/api/posts',
+        event: '/api/events',
         hotel: '/api/hotels',
         competition: '/api/competitions',
         site: '/api/planting-sites',
+        success_story: '/api/success-stories',
       }
 
       const endpoint = endpoints[deleteType]
@@ -351,76 +382,107 @@ export function AdminDashboard() {
     rejected: 'bg-red-500/10 text-red-600 dark:text-red-400',
     winner: 'bg-sunlight/20 text-earth dark:text-sunlight font-semibold',
   }
+  const allContent = [
+    ...posts.map(p => ({ ...p, contentType: 'post' })),
+    ...events.map(e => ({ ...e, contentType: 'event' }))
+  ].sort((a: any, b: any) => {
+    const dateA = new Date(a.createdAt || a.date).getTime()
+    const dateB = new Date(b.createdAt || b.date).getTime()
+    return dateB - dateA
+  })
+
+  const Sidebar = ({ mobile = false, setOpen = (val: boolean) => {} }: { mobile?: boolean, setOpen?: (open: boolean) => void }) => (
+    <div className="flex flex-col h-full">
+      <div className="p-6 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-forest flex items-center justify-center text-primary-foreground shadow-lg shadow-forest/20">
+            <Shield className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="font-bold text-foreground leading-tight">Admin</h1>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Ethosss Platform</p>
+          </div>
+        </div>
+      </div>
+
+      <nav className="flex-1 p-4 space-y-1">
+        {[
+          { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+          { id: 'content', label: 'Content', icon: FileText },
+          { id: 'hotels', label: 'Eco-Hotels', icon: Building2 },
+          { id: 'competitions', label: 'Competitions', icon: Trophy },
+          { id: 'entries', label: 'Entries', icon: Edit },
+          { id: 'users', label: 'Users', icon: Users },
+          { id: 'sites', label: 'Planting Sites', icon: TreePine },
+          { id: 'stories', label: 'Success Stories', icon: Target },
+          { id: 'settings', label: 'Global Settings', icon: Settings },
+        ].map((item) => (
+          <button
+            key={item.id}
+            onClick={() => { setActiveTab(item.id); if (mobile) setOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === item.id
+                ? 'bg-forest text-primary-foreground shadow-md shadow-forest/10'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="p-4 border-t border-border">
+        <div className="bg-muted/50 rounded-xl p-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-forest/20 flex items-center justify-center text-forest font-bold text-xs">
+            {session?.user?.name?.charAt(0) || 'A'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold truncate">{session?.user?.name}</p>
+            <p className="text-[10px] text-muted-foreground truncate">Administrator</p>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/')}
+          className="w-full mt-4 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Site
+        </Button>
+      </div>
+    </div>
+  )
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
     <div className="flex min-h-screen bg-muted/30">
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <aside className="w-64 bg-card border-r border-border hidden md:flex flex-col sticky top-0 h-screen">
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-forest flex items-center justify-center text-primary-foreground shadow-lg shadow-forest/20">
-              <Shield className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="font-bold text-foreground leading-tight">Admin</h1>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Ethosss Platform</p>
-            </div>
-          </div>
-        </div>
-
-        <nav className="flex-1 p-4 space-y-1">
-          {[
-            { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-            { id: 'posts', label: 'Blog Posts', icon: FileText },
-            { id: 'hotels', label: 'Eco-Hotels', icon: Building2 },
-            { id: 'competitions', label: 'Competitions', icon: Trophy },
-            { id: 'entries', label: 'Entries', icon: Edit },
-            { id: 'users', label: 'Users', icon: Users },
-            { id: 'sites', label: 'Planting Sites', icon: TreePine },
-            { id: 'settings', label: 'Global Settings', icon: Settings },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                activeTab === item.id
-                  ? 'bg-forest text-primary-foreground shadow-md shadow-forest/10'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-border">
-          <div className="bg-muted/50 rounded-xl p-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-forest/20 flex items-center justify-center text-forest font-bold text-xs">
-              {session?.user?.name?.charAt(0) || 'A'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold truncate">{session?.user?.name}</p>
-              <p className="text-[10px] text-muted-foreground truncate">Administrator</p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/')}
-            className="w-full mt-4 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Site
-          </Button>
-        </div>
+        <Sidebar />
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-8 sticky top-0 z-20">
+        <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
           <div className="flex items-center gap-4">
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-64 border-none">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Admin Navigation</SheetTitle>
+                </SheetHeader>
+                <Sidebar mobile setOpen={setIsMobileMenuOpen} />
+              </SheetContent>
+            </Sheet>
+
             <h2 className="text-lg font-bold capitalize">{activeTab.replace('-', ' ')}</h2>
             <div className="h-4 w-px bg-border hidden sm:block" />
             <div className="relative hidden sm:block">
@@ -443,10 +505,10 @@ export function AdminDashboard() {
             </Button>
             <Separator orientation="vertical" className="h-6 mx-1" />
             
-            {activeTab === 'posts' && (
-              <AddPostDialog 
+            {activeTab === 'content' && (
+              <AddContentDialog 
                 onSuccess={() => { fetchData(); setPostEditOpen(false); setEditingPost(null); }} 
-                editingPost={editingPost}
+                editingItem={editingPost}
                 open={postEditOpen}
                 onOpenChange={setPostEditOpen}
               />
@@ -474,6 +536,14 @@ export function AdminDashboard() {
                   <AddCompetitionDialog open={!!editingCompetition} onOpenChange={(open) => !open && setEditingCompetition(null)} editingCompetition={editingCompetition} onSuccess={fetchData} />
                 )}
               </>
+            )}
+            {activeTab === 'stories' && (
+              <AddSuccessStoryDialog 
+                onSuccess={fetchData} 
+                editingItem={editingStory}
+                open={storyEditOpen}
+                onOpenChange={setStoryEditOpen}
+              />
             )}
           </div>
         </header>
@@ -593,43 +663,46 @@ export function AdminDashboard() {
                 </div>
               </TabsContent>
 
-              {/* Posts Tab */}
-              <TabsContent value="posts" className="space-y-8 mt-0">
-                {/* Latest Post Highlight */}
-                {posts.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
-                  <Card className="border-none shadow-sm overflow-hidden bg-forest text-white group cursor-pointer" onClick={() => router.push(`/blog/${posts[0].id}`)}>
+              <TabsContent value="content" className="space-y-8 mt-0">
+                {/* Latest Content Highlight */}
+                {allContent.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
+                  <Card className="border-none shadow-sm overflow-hidden bg-forest text-white group cursor-pointer" onClick={() => router.push(allContent[0].contentType === 'post' ? `/blog/${allContent[0].id}` : '#')}>
                     <div className="flex flex-col md:flex-row h-full">
                       <div className="w-full md:w-1/3 aspect-video md:aspect-auto relative overflow-hidden">
                         <img 
-                          src={(posts[0] as any).coverImage || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800'} 
+                          src={(allContent[0] as any).coverImage || (allContent[0] as any).image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800'} 
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                          alt={posts[0].title}
+                          alt={allContent[0].title}
                         />
                         <div className="absolute top-4 left-4">
-                          <Badge className="bg-sunlight text-bark border-none font-bold">FEATURED</Badge>
+                          <Badge className="bg-sunlight text-bark border-none font-bold">LATEST</Badge>
                         </div>
                       </div>
                       <CardContent className="p-8 flex-1 flex flex-col justify-center">
                         <div className="flex items-center gap-3 mb-4">
-                          <Badge variant="outline" className="text-sunlight border-sunlight/30">{posts[0].category?.name}</Badge>
+                          <Badge variant="outline" className="text-sunlight border-sunlight/30">
+                            {allContent[0].contentType === 'post' ? allContent[0].category?.name || 'Post' : 'Event'}
+                          </Badge>
                           <span className="text-xs text-white/60 flex items-center gap-1">
-                            <Calendar className="h-3 w-3" /> {format(new Date(posts[0].createdAt), 'MMM d, yyyy')}
+                            <Calendar className="h-3 w-3" /> {format(new Date(allContent[0].createdAt || allContent[0].date), 'MMM d, yyyy')}
                           </span>
                         </div>
                         <h2 className="text-3xl font-bold mb-4 group-hover:text-sunlight transition-colors leading-tight">
-                          {posts[0].title}
+                          {allContent[0].title}
                         </h2>
-                        <div className="flex items-center gap-6 mt-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-forest flex items-center justify-center text-xs font-bold">
-                              {posts[0].author.name.charAt(0)}
+                        {allContent[0].contentType === 'post' && (
+                          <div className="flex items-center gap-6 mt-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-forest flex items-center justify-center text-xs font-bold">
+                                {allContent[0].author?.name?.charAt(0)}
+                              </div>
+                              <span className="text-sm font-medium">{allContent[0].author?.name}</span>
                             </div>
-                            <span className="text-sm font-medium">{posts[0].author.name}</span>
+                            <div className="flex items-center gap-2 text-sm text-white/60">
+                              <MessageSquare className="h-4 w-4" /> {allContent[0]._count?.comments || 0} Comments
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-white/60">
-                            <MessageSquare className="h-4 w-4" /> {posts[0]._count.comments} Comments
-                          </div>
-                        </div>
+                        )}
                       </CardContent>
                     </div>
                   </Card>
@@ -639,17 +712,20 @@ export function AdminDashboard() {
                   {loading ? (
                     Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl" />)
                   ) : (
-                    posts
-                      .filter(post => post.title.toLowerCase().includes(searchQuery.toLowerCase()) || post.category?.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                      .map((post) => (
-                      <Card key={post.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden">
+                    allContent
+                      .filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()) || (item.category?.name || '').toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map((item) => (
+                      <Card key={item.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden">
                         <div className="aspect-video relative overflow-hidden">
                           <img 
-                            src={(post as any).coverImage || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800'} 
+                            src={(item as any).coverImage || (item as any).image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800'} 
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                            alt={post.title}
+                            alt={item.title}
                           />
-                          <div className="absolute top-3 right-3">
+                          <div className="absolute top-3 right-3 flex gap-2">
+                            <Badge className={`${item.contentType === 'event' ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-forest hover:bg-forest'} text-white border-none font-bold uppercase text-[10px]`}>
+                              {item.contentType}
+                            </Badge>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
@@ -657,14 +733,16 @@ export function AdminDashboard() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-40 rounded-xl">
-                                <DropdownMenuItem onClick={() => router.push(`/blog/${post.id}`)} className="gap-2">
-                                  <Eye className="h-4 w-4" /> View
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { setEditingPost(post); setPostEditOpen(true); }} className="gap-2">
+                                {item.contentType === 'post' && (
+                                  <DropdownMenuItem onClick={() => router.push(`/blog/${item.id}`)} className="gap-2">
+                                    <Eye className="h-4 w-4" /> View
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => { setEditingPost(item); setPostEditOpen(true); }} className="gap-2">
                                   <Edit className="h-4 w-4" /> Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setDeleteType('post'); setDeleteId(post.id); setDeleteDialogOpen(true); }} className="text-destructive gap-2">
+                                <DropdownMenuItem onClick={() => { setDeleteType(item.contentType); setDeleteId(item.id); setDeleteDialogOpen(true); }} className="text-destructive gap-2">
                                   <Trash2 className="h-4 w-4" /> Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -674,27 +752,36 @@ export function AdminDashboard() {
                         <CardContent className="p-5">
                           <div className="flex items-center justify-between mb-3">
                             <Badge variant="secondary" className="bg-forest/10 text-forest text-[10px] uppercase font-bold tracking-wider">
-                              {post.category?.name || 'Uncategorized'}
+                              {item.contentType === 'post' ? item.category?.name || 'Uncategorized' : 'Upcoming Event'}
                             </Badge>
-                            <span className="text-[10px] text-muted-foreground font-medium">
-                              {format(new Date(post.createdAt), 'MMM d, yyyy')}
+                            <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {format(new Date(item.createdAt || item.date), 'MMM d, yyyy')}
                             </span>
                           </div>
                           <h3 className="font-bold text-lg mb-4 line-clamp-2 leading-tight group-hover:text-forest transition-colors">
-                            {post.title}
+                            {item.title}
                           </h3>
                           <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold">
-                                {post.author.name.charAt(0)}
+                            {item.contentType === 'post' ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold">
+                                  {item.author?.name?.charAt(0) || 'A'}
+                                </div>
+                                <span className="text-xs font-medium text-muted-foreground">{item.author?.name || 'Admin'}</span>
                               </div>
-                              <span className="text-xs font-medium text-muted-foreground">{post.author.name}</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                <MessageSquare className="h-3 w-3" /> {post._count.comments}
+                            ) : (
+                              <div className="text-xs font-medium text-muted-foreground line-clamp-1 flex-1 pr-2">
+                                {item.location}
                               </div>
-                              {post.published ? (
+                            )}
+                            <div className="flex items-center gap-3 shrink-0">
+                              {item.contentType === 'post' && (
+                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                  <MessageSquare className="h-3 w-3" /> {item._count?.comments || 0}
+                                </div>
+                              )}
+                              {item.published || item.isActive ? (
                                 <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-[9px] h-4">Live</Badge>
                               ) : (
                                 <Badge variant="secondary" className="text-[9px] h-4">Draft</Badge>
@@ -1023,6 +1110,66 @@ export function AdminDashboard() {
                           </CardContent>
                         </Card>
                       ))
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Success Stories Tab */}
+              <TabsContent value="stories" className="space-y-6 mt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {loading ? (
+                    Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-72 w-full rounded-2xl" />)
+                  ) : (
+                    stories
+                      .filter(story => story.businessName.toLowerCase().includes(searchQuery.toLowerCase()) || story.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map((story) => (
+                      <Card key={story.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden">
+                        <div className="aspect-video relative overflow-hidden">
+                          <img 
+                            src={(story as any).image || 'https://images.unsplash.com/photo-1518005020251-58296d8f8d60?w=800'} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                            alt={story.businessName}
+                          />
+                          <div className="absolute top-3 right-3 flex gap-2">
+                            {story.featured && (
+                              <Badge className="bg-sunlight text-bark border-none shadow-sm font-bold text-[10px]">FEATURED</Badge>
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm shadow-sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                                <DropdownMenuItem onClick={() => { setEditingStory(story); setStoryEditOpen(true); }} className="gap-2">
+                                  <Edit className="h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => { setDeleteType('success_story'); setDeleteId(story.id); setDeleteDialogOpen(true); }} className="text-destructive gap-2">
+                                  <Trash2 className="h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                        <CardContent className="p-5">
+                          <div className="flex items-center justify-between mb-2">
+                            <Badge variant="secondary" className="bg-forest/10 text-forest text-[10px] font-bold">
+                              {story.category}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground">
+                              {format(new Date(story.createdAt), 'MMM d, yyyy')}
+                            </span>
+                          </div>
+                          <h3 className="font-bold text-lg mb-1 leading-tight">{story.businessName}</h3>
+                          <p className="text-xs text-muted-foreground font-medium mb-3">{story.title}</p>
+                          <div className="flex items-center gap-2 text-forest font-bold text-xs pt-3 border-t border-border/50">
+                            <Target className="h-3 w-3" />
+                            {story.impact}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
                   )}
                 </div>
               </TabsContent>

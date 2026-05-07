@@ -101,6 +101,22 @@ const slides: Slide[] = [
 export function WhatWeDoCarousel() {
   const [current, setCurrent] = useState(0)
   const [direction, setDirection] = useState(0)
+  const [images, setImages] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings && data.settings.what_we_do_images) {
+          try {
+            setImages(JSON.parse(data.settings.what_we_do_images))
+          } catch {
+            // Keep empty
+          }
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const goTo = useCallback(
     (index: number) => {
@@ -217,21 +233,27 @@ export function WhatWeDoCarousel() {
 
                       {/* Image side */}
                       <div className="hidden lg:flex lg:w-[40%] items-center justify-center p-8 bg-muted/5">
-                        <div
-                          className={`w-full h-full rounded-xl ${slide.iconBg} border border-border/50 flex items-center justify-center min-h-[280px] shadow-inner`}
-                        >
-                          <div className="text-center">
-                            <Icon
-                              className={`h-16 w-16 ${slide.accentColor} opacity-20 mx-auto mb-3`}
-                            />
-                            <p className="text-muted-foreground text-sm font-medium">
-                              {slide.imagePlaceholder}
-                            </p>
-                            <p className="text-muted-foreground/40 text-xs mt-1">
-                              Image Coming Soon
-                            </p>
+                        {images[current] ? (
+                          <div className="w-full h-full rounded-xl overflow-hidden border border-border/50 shadow-inner min-h-[280px]">
+                            <img src={images[current]} alt={slide.title} className="w-full h-full object-cover" />
                           </div>
-                        </div>
+                        ) : (
+                          <div
+                            className={`w-full h-full rounded-xl ${slide.iconBg} border border-border/50 flex items-center justify-center min-h-[280px] shadow-inner`}
+                          >
+                            <div className="text-center">
+                              <Icon
+                                className={`h-16 w-16 ${slide.accentColor} opacity-20 mx-auto mb-3`}
+                              />
+                              <p className="text-muted-foreground text-sm font-medium">
+                                {slide.imagePlaceholder}
+                              </p>
+                              <p className="text-muted-foreground/40 text-xs mt-1">
+                                Image Coming Soon
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>

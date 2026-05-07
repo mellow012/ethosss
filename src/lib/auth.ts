@@ -1,6 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 import bcrypt from "bcryptjs";
 import type { DefaultSession } from "next-auth";
 
@@ -36,9 +36,16 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password required");
         }
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email },
-        });
+        const { data: user, error } = await supabaseAdmin
+          .from("User")
+          .select("*")
+          .eq("email", credentials.email)
+          .single();
+
+        if (error) {
+          console.error("Auth error:", error);
+          throw new Error("Invalid email or password");
+        }
 
         if (!user || !user.password) {
           throw new Error("Invalid email or password");

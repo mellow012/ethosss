@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,72 +13,67 @@ export async function GET(request: NextRequest) {
     const ecoRating = searchParams.get("ecoRating");
     const search = searchParams.get("search");
 
-    const where: any = {};
+    const skip = (page - 1) * limit;
+    
+    let query = supabaseAdmin
+      .from('Hotel')
+      .select('*, reviews:HotelReview(count)', { count: 'exact' });
 
     if (featured !== null) {
-      where.featured = featured === "true";
+      query = query.eq('featured', featured === "true");
     }
 
     if (region) {
-      where.region = region;
+      query = query.eq('region', region);
     }
 
     if (ecoRating) {
-      where.ecoRating = parseInt(ecoRating);
+      query = query.eq('ecoRating', parseInt(ecoRating));
     }
 
     if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { city: { contains: search } },
-        { description: { contains: search } },
-        { shortDesc: { contains: search } },
-      ];
+      query = query.or(`name.ilike.%${search}%,city.ilike.%${search}%,description.ilike.%${search}%,shortDesc.ilike.%${search}%`);
     }
 
-    const skip = (page - 1) * limit;
+    const { data: hotels, count: total, error } = await query
+      .order('createdAt', { ascending: false })
+      .range(skip, skip + limit - 1);
 
-    const [hotels, total] = await Promise.all([
-      db.hotel.findMany({
-        where,
-        include: {
-          _count: {
-            select: { reviews: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      db.hotel.count({ where }),
-    ]);
+    if (error) throw error;
 
-    // Optimized: Fetch all ratings in ONE query instead of N queries
-    const hotelIds = hotels.map((h) => h.id);
-    const ratings = await db.hotelReview.groupBy({
-      by: ['hotelId'],
-      where: { hotelId: { in: hotelIds } },
-      _avg: { rating: true },
+    // Fetch average ratings
+    const hotelIds = hotels.map((h: any) => h.id);
+    const { data: reviews, error: reviewError } = await supabaseAdmin
+      .from('HotelReview')
+      .select('hotelId, rating')
+      .in('hotelId', hotelIds);
+
+    if (reviewError) throw reviewError;
+
+    const ratingsMap = new Map();
+    reviews?.forEach(r => {
+      const current = ratingsMap.get(r.hotelId) || { sum: 0, count: 0 };
+      ratingsMap.set(r.hotelId, { sum: current.sum + r.rating, count: current.count + 1 });
     });
 
-    const ratingsMap = new Map(
-      ratings.map((r) => [r.hotelId, r._avg.rating])
-    );
-
-    const hotelsWithAvg = hotels.map((hotel) => ({
-      ...hotel,
-      averageRating: ratingsMap.get(hotel.id)
-        ? Math.round((ratingsMap.get(hotel.id) as number) * 10) / 10
-        : null,
-    }));
+    const hotelsWithAvg = hotels.map((hotel: any) => {
+      const ratingInfo = ratingsMap.get(hotel.id);
+      return {
+        ...hotel,
+        _count: { reviews: hotel.reviews?.[0]?.count || 0 },
+        averageRating: ratingInfo 
+          ? Math.round((ratingInfo.sum / ratingInfo.count) * 10) / 10 
+          : null,
+      };
+    });
 
     return NextResponse.json({
       hotels: hotelsWithAvg,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: total || 0,
+        totalPages: Math.ceil((total || 0) / limit),
       },
     });
   } catch (error: any) {
@@ -132,8 +127,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const hotel = await db.hotel.create({
-      data: {
+    const { data: hotel, error } = await supabaseAdmin
+      .from('Hotel')
+      .insert({
         name,
         slug,
         description,
@@ -154,8 +150,11 @@ export async function POST(request: NextRequest) {
         email,
         featured: featured ?? false,
         verified: verified ?? false,
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ hotel }, { status: 201 });
   } catch (error: any) {
@@ -191,9 +190,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    await db.hotel.delete({
-      where: { id },
-    });
+    const { error } = await supabaseAdmin
+      .from('Hotel')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     return NextResponse.json({ message: "Hotel deleted successfully" });
   } catch (error: any) {
@@ -268,21 +270,25 @@ export async function PUT(request: NextRequest) {
     if (featured !== undefined) updateData.featured = featured;
     if (verified !== undefined) updateData.verified = verified;
 
-    const hotel = await db.hotel.update({
-      where: { id },
-      data: updateData,
-    });
+    const { data: hotel, error } = await supabaseAdmin
+      .from('Hotel')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ hotel });
   } catch (error: any) {
     console.error("Hotels PUT error:", error);
-    if (error.code === "P2002") {
+    if (error?.code === "23505") { // Supabase unique violation
       return NextResponse.json(
         { error: "A hotel with this slug already exists" },
         { status: 409 }
       );
     }
-    if (error.code === "P2025") {
+    if (error?.code === "P2025" || error?.message?.includes("No rows found")) {
       return NextResponse.json(
         { error: "Hotel not found" },
         { status: 404 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import {
   Calendar,
   ArrowRight,
@@ -151,10 +152,15 @@ export function LatestPosts() {
                   <CardContent className="h-full p-0 flex flex-col md:flex-row">
                     <div className="relative w-full md:w-1/2 h-48 md:h-full overflow-hidden">
                       {post.coverImage ? (
-                        <div
-                          className="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
-                          style={{ backgroundImage: `url(${post.coverImage})` }}
-                        />
+                        <div className="absolute inset-0 group-hover:scale-105 transition-transform duration-700">
+                          <Image
+                            src={post.coverImage}
+                            alt={post.title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                          />
+                        </div>
                       ) : (
                         <div className="w-full h-full gradient-forest flex items-center justify-center">
                           <FileText className="h-16 w-16 text-white/30" />

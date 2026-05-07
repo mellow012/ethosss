@@ -1,64 +1,65 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { subMonths, startOfMonth, format } from 'date-fns'
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
+import { subMonths, startOfMonth, format, endOfMonth } from 'date-fns'
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // Last 6 months labels
     const months = Array.from({ length: 6 }).map((_, i) => {
       const date = subMonths(new Date(), i)
       return {
         label: format(date, 'MMM'),
-        start: startOfMonth(date),
-        end: i === 0 ? new Date() : startOfMonth(subMonths(new Date(), i - 1))
+        start: startOfMonth(date).toISOString(),
+        end: i === 0 ? new Date().toISOString() : startOfMonth(subMonths(new Date(), i - 1)).toISOString()
       }
     }).reverse()
 
     // Fetch monthly data for users and posts
     const analyticsData = await Promise.all(months.map(async (month) => {
-      const [userCount, postCount] = await Promise.all([
-        db.user.count({
-          where: {
-            createdAt: {
-              gte: month.start,
-              lt: month.end
-            }
-          }
-        }),
-        db.post.count({
-          where: {
-            createdAt: {
-              gte: month.start,
-              lt: month.end
-            }
-          }
-        })
+      const [userRes, postRes] = await Promise.all([
+        supabaseAdmin
+          .from('User')
+          .select('*', { count: 'exact', head: true })
+          .gte('createdAt', month.start)
+          .lt('createdAt', month.end),
+        supabaseAdmin
+          .from('Post')
+          .select('*', { count: 'exact', head: true })
+          .gte('createdAt', month.start)
+          .lt('createdAt', month.end)
       ])
+      
       return {
         name: month.label,
-        users: userCount,
-        posts: postCount
+        users: userRes.count || 0,
+        posts: postRes.count || 0
       }
     }))
 
-    // Fetch competition distribution
-    const competitions = await db.competition.findMany({
-      select: {
-        title: true,
-        _count: {
-          select: { entries: true }
-        }
-      },
-      take: 5,
-      orderBy: {
-        entries: { _count: 'desc' }
-      }
-    })
+    // Fetch competition distribution (top 5 by entries)
+    // Supabase doesn't support easy "count by join" in a single order query without a view
+    // So we fetch competitions and their entry counts separately or using a join
+    const { data: competitions, error: compError } = await supabaseAdmin
+      .from('Competition')
+      .select('title, entries:CompetitionEntry(count)')
+      .limit(20); // Fetch a few to sort manually
 
-    const competitionData = competitions.map(c => ({
-      name: c.title.length > 15 ? c.title.substring(0, 15) + '...' : c.title,
-      value: c._count.entries
-    }))
+    if (compError) throw compError;
+
+    const competitionData = (competitions || [])
+      .map(comp => ({
+        name: comp.title.length > 15 ? comp.title.substring(0, 15) + '...' : comp.title,
+        value: comp.entries?.[0]?.count || 0
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
 
     return NextResponse.json({
       growth: analyticsData,

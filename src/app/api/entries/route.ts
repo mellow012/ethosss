@@ -1,65 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const competitionId = searchParams.get("competitionId");
     const userId = searchParams.get("userId");
+    const limit = parseInt(searchParams.get("limit") || "500");
 
-    if (!competitionId) {
+    const session = await getServerSession(authOptions);
+    const isAdmin = (session?.user as any)?.role === "admin";
+    const currentUserId = (session?.user as any)?.id;
+
+    if (!competitionId && !isAdmin) {
       return NextResponse.json(
         { error: "competitionId is required" },
         { status: 400 }
       );
     }
 
-    // Verify competition exists
-    const competition = await db.competition.findUnique({
-      where: { id: competitionId },
-    });
-    if (!competition) {
-      return NextResponse.json(
-        { error: "Competition not found" },
-        { status: 404 }
-      );
+    let query = supabaseAdmin
+      .from('CompetitionEntry')
+      .select(`
+        *,
+        user:User(id, name, email, image)
+      `);
+
+    if (competitionId) {
+      query = query.eq('competitionId', competitionId);
     }
-
-    const session = await getServerSession(authOptions);
-    const isAdmin = (session?.user as any)?.role === "admin";
-    const currentUserId = (session?.user as any)?.id;
-
-    const where: any = { competitionId };
 
     // Filter by userId if provided
     if (userId) {
       // Only allow users to see their own entries, or admin to see any
       if (isAdmin || userId === currentUserId) {
-        where.userId = userId;
+        query = query.eq('userId', userId);
       } else {
-        return NextResponse.json(
-          { error: "Forbidden" },
-          { status: 403 }
-        );
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
 
     // Non-admins only see approved or their own entries
     if (!isAdmin && !userId) {
-      where.status = { in: ["approved", "winner"] };
+      query = query.in('status', ["approved", "winner"]);
     }
 
-    const entries = await db.competitionEntry.findMany({
-      where,
-      include: {
-        user: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-      },
-      orderBy: { submittedAt: "desc" },
-    });
+    const { data: entries, error } = await query
+      .order('submittedAt', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
 
     return NextResponse.json({ entries });
   } catch (error: any) {
@@ -91,45 +83,39 @@ export async function POST(request: NextRequest) {
     const currentUserId = (session.user as any).id;
 
     // Verify competition exists and is active
-    const competition = await db.competition.findUnique({
-      where: { id: competitionId },
-    });
+    const { data: competition, error: compError } = await supabaseAdmin
+      .from('Competition')
+      .select('*')
+      .eq('id', competitionId)
+      .single();
 
-    if (!competition) {
-      return NextResponse.json(
-        { error: "Competition not found" },
-        { status: 404 }
-      );
+    if (compError || !competition) {
+      return NextResponse.json({ error: "Competition not found" }, { status: 404 });
     }
 
     if (!competition.isActive) {
-      return NextResponse.json(
-        { error: "Competition is no longer active" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Competition is no longer active" }, { status: 400 });
     }
 
-    // Check if competition is still open
+    // Check dates
     const now = new Date();
-    if (now < competition.startDate) {
-      return NextResponse.json(
-        { error: "Competition has not started yet" },
-        { status: 400 }
-      );
+    if (now < new Date(competition.startDate)) {
+      return NextResponse.json({ error: "Competition has not started yet" }, { status: 400 });
     }
-    if (now > competition.endDate) {
-      return NextResponse.json(
-        { error: "Competition has ended" },
-        { status: 400 }
-      );
+    if (now > new Date(competition.endDate)) {
+      return NextResponse.json({ error: "Competition has ended" }, { status: 400 });
     }
 
-    // Check max entries limit
+    // Check max entries
     if (competition.maxEntries) {
-      const existingCount = await db.competitionEntry.count({
-        where: { competitionId, userId: currentUserId },
-      });
-      if (existingCount >= competition.maxEntries) {
+      const { count, error: countError } = await supabaseAdmin
+        .from('CompetitionEntry')
+        .select('*', { count: 'exact', head: true })
+        .eq('competitionId', competitionId)
+        .eq('userId', currentUserId);
+      
+      if (countError) throw countError;
+      if (count && count >= competition.maxEntries) {
         return NextResponse.json(
           { error: `Maximum of ${competition.maxEntries} entries allowed` },
           { status: 400 }
@@ -137,44 +123,44 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const entry = await db.competitionEntry.create({
-      data: {
+    // Create entry
+    const { data: entry, error: insertError } = await supabaseAdmin
+      .from('CompetitionEntry')
+      .insert({
         competitionId,
         userId: currentUserId,
         content,
         imageUrl,
         status: "pending",
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-      },
-    });
+      })
+      .select(`
+        *,
+        user:User(id, name, email, image)
+      `)
+      .single();
 
-    // Automatic Winner Logic: Entry Threshold
+    if (insertError) throw insertError;
+
+    // Automatic Winner Logic
     if (competition.conditionType === 'entry_count' && competition.conditionValue) {
       const threshold = parseInt(competition.conditionValue);
-      const currentCount = await db.competitionEntry.count({ where: { competitionId } });
+      const { count: currentCount } = await supabaseAdmin
+        .from('CompetitionEntry')
+        .select('*', { count: 'exact', head: true })
+        .eq('competitionId', competitionId);
       
-      if (currentCount >= threshold) {
-        // Pick a random winner from all approved entries (or all if we don't care about approval for auto-pick)
-        const entries = await db.competitionEntry.findMany({
-          where: { competitionId }
-        });
+      if (currentCount && currentCount >= threshold) {
+        const { data: allEntries } = await supabaseAdmin
+          .from('CompetitionEntry')
+          .select('id, userId')
+          .eq('competitionId', competitionId);
         
-        if (entries.length > 0) {
-          const winnerEntry = entries[Math.floor(Math.random() * entries.length)];
+        if (allEntries && allEntries.length > 0) {
+          const winnerEntry = allEntries[Math.floor(Math.random() * allEntries.length)];
           
-          await db.$transaction([
-            db.competitionEntry.update({
-              where: { id: winnerEntry.id },
-              data: { status: 'winner' }
-            }),
-            db.competition.update({
-              where: { id: competitionId },
-              data: { isActive: false, winnerId: winnerEntry.userId }
-            })
+          await Promise.all([
+            supabaseAdmin.from('CompetitionEntry').update({ status: 'winner' }).eq('id', winnerEntry.id),
+            supabaseAdmin.from('Competition').update({ isActive: false, winnerId: winnerEntry.userId }).eq('id', competitionId)
           ]);
         }
       }
@@ -193,55 +179,36 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session || (session.user as any).role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const userRole = (session.user as any).role;
-    if (userRole !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();
     const { id, status } = body;
 
     if (!id || !status) {
-      return NextResponse.json(
-        { error: "Entry id and status are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Entry id and status are required" }, { status: 400 });
     }
 
-    const validStatuses = ["pending", "approved", "rejected", "winner"];
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json(
-        { error: `Status must be one of: ${validStatuses.join(", ")}` },
-        { status: 400 }
-      );
-    }
-
-    const entry = await db.competitionEntry.update({
-      where: { id },
-      data: {
+    const { data: entry, error } = await supabaseAdmin
+      .from('CompetitionEntry')
+      .update({
         status,
-        reviewedAt: new Date(),
+        reviewedAt: new Date().toISOString(),
         reviewedBy: (session.user as any).id,
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-      },
-    });
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        user:User(id, name, email, image)
+      `)
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ entry });
   } catch (error: any) {
     console.error("Entries PUT error:", error);
-    if (error.code === "P2025") {
-      return NextResponse.json(
-        { error: "Entry not found" },
-        { status: 404 }
-      );
-    }
     return NextResponse.json(
       { error: "Failed to update entry", details: error.message },
       { status: 500 }
@@ -256,47 +223,36 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { id } = body;
+    const { id } = await request.json();
+    if (!id) return NextResponse.json({ error: "ID is required" }, { status: 400 });
 
-    if (!id) {
-      return NextResponse.json({ error: "ID is required" }, { status: 400 });
-    }
+    const { data: entry, error: fetchError } = await supabaseAdmin
+      .from('CompetitionEntry')
+      .select('userId, status')
+      .eq('id', id)
+      .single();
 
-    // Get the entry to check ownership
-    const entry = await db.competitionEntry.findUnique({
-      where: { id },
-    });
-
-    if (!entry) {
-      return NextResponse.json(
-        { error: "Entry not found" },
-        { status: 404 }
-      );
+    if (fetchError || !entry) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
 
     const userRole = (session.user as any).role;
     const currentUserId = (session.user as any).id;
 
-    // Allow delete if: admin OR entry owner
     if (userRole !== "admin" && entry.userId !== currentUserId) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Don't allow deletion of winner entries
     if (entry.status === "winner") {
-      return NextResponse.json(
-        { error: "Cannot delete winner entries" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Cannot delete winner entries" }, { status: 400 });
     }
 
-    await db.competitionEntry.delete({
-      where: { id },
-    });
+    const { error } = await supabaseAdmin
+      .from('CompetitionEntry')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     return NextResponse.json({ message: "Entry deleted successfully" });
   } catch (error: any) {

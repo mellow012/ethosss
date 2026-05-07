@@ -5,6 +5,7 @@ import { HeroSection } from '@/components/home/HeroSection'
 import { VisionSection } from '@/components/home/VisionSection'
 import { WhatWeDoCarousel } from '@/components/home/WhatWeDoCarousel'
 import { ImpactStats } from '@/components/home/ImpactStats'
+import { EcoBusinessSuccess } from '@/components/home/EcoBusinessSuccess'
 import { FeaturedHotels } from '@/components/home/FeaturedHotels'
 import { ActiveCompetitions } from '@/components/home/ActiveCompetitions'
 import { LatestPosts } from '@/components/home/LatestPosts'
@@ -45,6 +46,7 @@ export default function Home() {
         <WhatWeDoCarousel />
       </div>
       <ImpactStats />
+      <EcoBusinessSuccess />
       <UpcomingEvents />
       <LatestPosts />
       <ActiveCompetitions />

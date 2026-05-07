@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import {
   Calendar,
   MapPin,
@@ -146,10 +147,15 @@ export function UpcomingEvents() {
                   <CardContent className="h-full p-0 flex flex-col md:flex-row">
                     <div className="relative w-full md:w-[45%] h-48 md:h-full overflow-hidden">
                       {event.image ? (
-                        <div
-                          className="w-full h-full bg-cover bg-center"
-                          style={{ backgroundImage: `url(${event.image})` }}
-                        />
+                        <div className="absolute inset-0">
+                          <Image
+                            src={event.image}
+                            alt={event.title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 45vw"
+                          />
+                        </div>
                       ) : (
                         <div className="w-full h-full gradient-forest flex items-center justify-center">
                           <Ticket className="h-20 w-20 text-white/20" />

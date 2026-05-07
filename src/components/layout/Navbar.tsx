@@ -38,6 +38,7 @@ const navLinks: { label: string; href: string }[] = [
   { label: 'Home', href: '/' },
   { label: 'Blog', href: '/blog' },
   { label: 'Hotels', href: '/hotels' },
+  { label: 'Eco-Business', href: '/eco-business' },
   { label: 'Competitions', href: '/competitions' },
 ]
 
@@ -102,6 +103,9 @@ export function Navbar() {
               alt="Ethosss"
               className="h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
             />
+            <span className="ml-2.5 text-xl font-bold tracking-tight text-foreground">
+              Ethosss
+            </span>
           </button>
 
           {/* Desktop Navigation */}
@@ -227,6 +231,9 @@ export function Navbar() {
                       alt="Ethosss"
                       className="h-8 w-auto object-contain"
                     />
+                    <span className="ml-2 text-lg font-bold tracking-tight text-foreground">
+                      Ethosss
+                    </span>
                   </div>
 
                   {/* Mobile Nav Links */}

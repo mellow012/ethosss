@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
@@ -21,9 +21,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const existingUser = await db.user.findUnique({
-      where: { email },
-    })
+    const { data: existingUser } = await supabaseAdmin
+      .from('User')
+      .select('id')
+      .eq('email', email)
+      .single()
 
     if (existingUser) {
       return NextResponse.json(
@@ -34,21 +36,18 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    const user = await db.user.create({
-      data: {
+    const { data: user, error } = await supabaseAdmin
+      .from('User')
+      .insert({
         email,
         name: name || null,
         password: hashedPassword,
         role: 'user',
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-      },
-    })
+      })
+      .select('id, email, name, role, createdAt')
+      .single()
+
+    if (error) throw error
 
     return NextResponse.json({ user }, { status: 201 })
   } catch (error: any) {

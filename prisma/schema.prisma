@@ -23,6 +23,8 @@ model User {
   entries    CompetitionEntry[]
   posts      Post[]
   sessions   Session[]
+  
+  @@index([createdAt])
 }
 
 model Account {
@@ -79,6 +81,8 @@ model Post {
   author      User      @relation(fields: [authorId], references: [id])
   category    Category? @relation(fields: [categoryId], references: [id])
   tags        PostTag[]
+  
+  @@index([createdAt])
 }
 
 model Category {
@@ -143,6 +147,8 @@ model Hotel {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   reviews     HotelReview[]
+  
+  @@index([region])
 }
 
 model HotelReview {
@@ -177,6 +183,8 @@ model Competition {
   updatedAt      DateTime           @updatedAt
   entries        CompetitionEntry[]
   rounds         CompetitionRound[]
+  
+  @@index([isActive])
 }
 
 model CompetitionRound {
@@ -210,6 +218,9 @@ model CompetitionEntry {
   reviewedBy    String?
   competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   user          User        @relation(fields: [userId], references: [id])
+  
+  @@index([status])
+  @@index([competitionId])
 }
 
 model Newsletter {
@@ -255,6 +266,8 @@ model PlantingSite {
   image        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  
+  @@index([region])
 }
 
 model SiteSetting {
@@ -266,3 +279,18 @@ model SiteSetting {
 }
 
 
+model SuccessStory {
+  id           String   @id @default(cuid())
+  title        String
+  businessName String
+  category     String
+  impact       String
+  description  String   @db.Text
+  image        String?
+  content      String?  @db.Text
+  featured     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([featured])
+}

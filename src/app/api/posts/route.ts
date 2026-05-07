@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,70 +17,60 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     const isAdmin = (session?.user as any)?.role === "admin";
 
-    const where: any = {};
+    const skip = (page - 1) * limit;
+
+    let query = supabaseAdmin
+      .from('Post')
+      .select(`
+        *,
+        author:User(id, name, email, image),
+        category:Category(*),
+        tags:PostTag(tag:Tag(*)),
+        comments:Comment(count)
+      `, { count: 'exact' });
 
     // If ?all=true is passed and user is admin, show all posts (including drafts)
-    if (all === "true" && isAdmin) {
-      // No published filter
-    } else {
-      // Default: only show published posts
-      where.published = true;
+    if (!(all === "true" && isAdmin)) {
+      query = query.eq('published', true);
     }
 
     // Explicit published filter (only respected for admin)
     if (published !== null && isAdmin) {
-      where.published = published === "true";
+      query = query.eq('published', published === "true");
     }
 
     if (featured !== null) {
-      where.featured = featured === "true";
+      query = query.eq('featured', featured === "true");
     }
 
     if (categoryId) {
-      where.categoryId = categoryId;
+      query = query.eq('categoryId', categoryId);
     }
 
     if (search) {
-      where.OR = [
-        { title: { contains: search } },
-        { excerpt: { contains: search } },
-        { content: { contains: search } },
-      ];
+      query = query.or(`title.ilike.%${search}%,excerpt.ilike.%${search}%,content.ilike.%${search}%`);
     }
 
-    const skip = (page - 1) * limit;
+    const { data: posts, count: total, error } = await query
+      .order('createdAt', { ascending: false })
+      .range(skip, skip + limit - 1);
 
-    const [posts, total] = await Promise.all([
-      db.post.findMany({
-        where,
-        include: {
-          author: {
-            select: { id: true, name: true, email: true, image: true },
-          },
-          category: true,
-          tags: {
-            include: {
-              tag: true,
-            },
-          },
-          _count: {
-            select: { comments: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      db.post.count({ where }),
-    ]);
+    if (error) throw error;
+
+    // Format the posts to match existing structure (tags nesting)
+    const formattedPosts = posts?.map(post => ({
+      ...post,
+      _count: { comments: post.comments?.[0]?.count || 0 },
+      tags: post.tags?.map((t: any) => ({ tag: t.tag })) || []
+    }));
 
     return NextResponse.json({
-      posts,
+      posts: formattedPosts,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: total || 0,
+        totalPages: Math.ceil((total || 0) / limit),
       },
     });
   } catch (error: any) {
@@ -113,8 +103,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const post = await db.post.create({
-      data: {
+    const { data: post, error } = await supabaseAdmin
+      .from('Post')
+      .insert({
         title,
         slug,
         content,
@@ -127,22 +118,25 @@ export async function POST(request: NextRequest) {
         featured: featured ?? false,
         authorId: (session.user as any).id,
         categoryId,
-        tags: tagIds
-          ? {
-              create: tagIds.map((tagId: string) => ({ tagId })),
-            }
-          : undefined,
-      },
-      include: {
-        author: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-        category: true,
-        tags: {
-          include: { tag: true },
-        },
-      },
-    });
+      })
+      .select(`
+        *,
+        author:User(id, name, email, image),
+        category:Category(*),
+        tags:PostTag(tag:Tag(*))
+      `)
+      .single();
+
+    if (error) throw error;
+
+    // Handle tags separately as Supabase doesn't support nested inserts for junction tables easily in one go
+    if (tagIds && tagIds.length > 0) {
+      const tagInserts = tagIds.map((tagId: string) => ({
+        postId: post.id,
+        tagId: tagId
+      }));
+      await supabaseAdmin.from('PostTag').insert(tagInserts);
+    }
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (error: any) {
@@ -191,27 +185,31 @@ export async function PUT(request: NextRequest) {
     if (featured !== undefined) updateData.featured = featured;
     if (categoryId !== undefined) updateData.categoryId = categoryId;
 
-    const post = await db.post.update({
-      where: { id },
-      data: {
-        ...updateData,
-        ...(tagIds && {
-          tags: {
-            deleteMany: {},
-            create: tagIds.map((tagId: string) => ({ tagId })),
-          },
-        }),
-      },
-      include: {
-        author: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-        category: true,
-        tags: {
-          include: { tag: true },
-        },
-      },
-    });
+    const { data: post, error } = await supabaseAdmin
+      .from('Post')
+      .update(updateData)
+      .eq('id', id)
+      .select(`
+        *,
+        author:User(id, name, email, image),
+        category:Category(*),
+        tags:PostTag(tag:Tag(*))
+      `)
+      .single();
+
+    if (error) throw error;
+
+    if (tagIds) {
+      // Replace tags
+      await supabaseAdmin.from('PostTag').delete().eq('postId', id);
+      if (tagIds.length > 0) {
+        const tagInserts = tagIds.map((tagId: string) => ({
+          postId: id,
+          tagId: tagId
+        }));
+        await supabaseAdmin.from('PostTag').insert(tagInserts);
+      }
+    }
 
     return NextResponse.json({ post });
   } catch (error: any) {
@@ -253,9 +251,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    await db.post.delete({
-      where: { id },
-    });
+    const { error } = await supabaseAdmin
+      .from('Post')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     return NextResponse.json({ message: "Post deleted successfully" });
   } catch (error: any) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,52 +19,43 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search");
 
-    const where: any = {};
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { email: { contains: search } },
-      ];
-    }
-
     const skip = (page - 1) * limit;
 
-    const [users, total] = await Promise.all([
-      db.user.findMany({
-        where,
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          image: true,
-          role: true,
-          bio: true,
-          isVerified: true,
-          createdAt: true,
-          updatedAt: true,
-          _count: {
-            select: {
-              posts: true,
-              comments: true,
-              entries: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      db.user.count({ where }),
-    ]);
+    let query = supabaseAdmin
+      .from('User')
+      .select(`
+        id, email, name, image, role, bio, isVerified, createdAt, updatedAt,
+        posts:Post(count),
+        comments:Comment(count),
+        entries:CompetitionEntry(count)
+      `, { count: 'exact' });
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+    }
+
+    const { data: users, count: total, error } = await query
+      .order('createdAt', { ascending: false })
+      .range(skip, skip + limit - 1);
+
+    if (error) throw error;
+
+    const formattedUsers = (users || []).map(user => ({
+      ...user,
+      _count: {
+        posts: user.posts?.[0]?.count || 0,
+        comments: user.comments?.[0]?.count || 0,
+        entries: user.entries?.[0]?.count || 0,
+      }
+    }));
 
     return NextResponse.json({
-      users,
+      users: formattedUsers,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: total || 0,
+        totalPages: Math.ceil((total || 0) / limit),
       },
     });
   } catch (error: any) {
@@ -97,36 +88,18 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const validRoles = ["user", "admin", "staff"];
-    if (!validRoles.includes(role)) {
-      return NextResponse.json(
-        { error: `Role must be one of: ${validRoles.join(", ")}` },
-        { status: 400 }
-      );
-    }
+    const { data: user, error } = await supabaseAdmin
+      .from('User')
+      .update({ role, updatedAt: new Date().toISOString() })
+      .eq('id', id)
+      .select('id, email, name, image, role, bio, isVerified, createdAt, updatedAt')
+      .single();
 
-    const user = await db.user.update({
-      where: { id },
-      data: { role },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        image: true,
-        role: true,
-        bio: true,
-        isVerified: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    if (error) throw error;
 
     return NextResponse.json({ user });
   } catch (error: any) {
     console.error("Users PUT error:", error);
-    if (error.code === "P2025") {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
     return NextResponse.json(
       { error: "Failed to update user", details: error.message },
       { status: 500 }

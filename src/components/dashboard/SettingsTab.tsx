@@ -17,6 +17,7 @@ export function SettingsTab() {
     hero_subtitle: '',
     hero_description: '',
     hero_eyebrow: '',
+    what_we_do_images: '[]',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -69,14 +70,63 @@ export function SettingsTab() {
     handleUpdate('hero_images', jsonValue)
   }
 
+  const getWhatWeDoImages = () => {
+    try {
+      return JSON.parse(settings.what_we_do_images || '[]')
+    } catch {
+      return []
+    }
+  }
+
+  const updateWhatWeDoImages = (images: string[]) => {
+    const jsonValue = JSON.stringify(images)
+    setSettings({ ...settings, what_we_do_images: jsonValue })
+    handleUpdate('what_we_do_images', jsonValue)
+  }
+
+  const handleSaveAll = async () => {
+    setSaving('all')
+    try {
+      await Promise.all(Object.entries(settings).map(([key, value]) => 
+        fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, value }),
+        })
+      ))
+      toast.success('All settings saved successfully')
+    } catch {
+      toast.error('Failed to save settings')
+    } finally {
+      setSaving(null)
+    }
+  }
+
   if (loading) {
     return <div className="p-10 text-center">Loading settings...</div>
   }
 
   const heroImages = getHeroImages()
+  const whatWeDoImages = getWhatWeDoImages()
+  // Ensure we have exactly 5 spots for What We Do
+  const paddedWhatWeDo = Array.from({ length: 5 }, (_, i) => whatWeDoImages[i] || '')
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
+      <div className="flex justify-between items-center bg-card p-4 rounded-xl border border-border shadow-sm mb-6">
+        <div>
+          <h2 className="text-lg font-bold">Global Settings</h2>
+          <p className="text-sm text-muted-foreground">Manage the content and configuration across the platform.</p>
+        </div>
+        <Button 
+          onClick={handleSaveAll} 
+          disabled={saving === 'all'}
+          className="bg-forest hover:bg-forest-dark text-white font-semibold flex items-center gap-2"
+        >
+          <Save className="h-4 w-4" />
+          {saving === 'all' ? 'Saving...' : 'Save All Changes'}
+        </Button>
+      </div>
       <Card className="border-none shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -140,14 +190,6 @@ export function SettingsTab() {
                     placeholder="e.g. See the World, Save the Planet"
                     className="bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-forest"
                   />
-                  <Button
-                    size="sm"
-                    onClick={() => handleUpdate('hero_eyebrow')}
-                    disabled={saving === 'hero_eyebrow'}
-                    className="bg-forest hover:bg-forest-dark"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
 
@@ -163,14 +205,6 @@ export function SettingsTab() {
                     placeholder="e.g. Protecting Nature, Inspiring Change"
                     className="bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-forest"
                   />
-                  <Button
-                    size="sm"
-                    onClick={() => handleUpdate('hero_title')}
-                    disabled={saving === 'hero_title'}
-                    className="bg-forest hover:bg-forest-dark"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <AlertCircle className="h-2.5 w-2.5" />
@@ -190,14 +224,6 @@ export function SettingsTab() {
                     placeholder="e.g. Building a greener tomorrow, today"
                     className="bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-forest"
                   />
-                  <Button
-                    size="sm"
-                    onClick={() => handleUpdate('hero_subtitle')}
-                    disabled={saving === 'hero_subtitle'}
-                    className="bg-forest hover:bg-forest-dark"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             </div>
@@ -214,16 +240,8 @@ export function SettingsTab() {
                     onChange={(e) => setSettings({ ...settings, hero_description: e.target.value })}
                     placeholder="Detailed description..."
                     rows={6}
-                    className="bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-forest resize-none"
+                    className="bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-forest resize-none w-full"
                   />
-                  <Button
-                    size="sm"
-                    onClick={() => handleUpdate('hero_description')}
-                    disabled={saving === 'hero_description'}
-                    className="bg-forest hover:bg-forest-dark"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
 
@@ -241,6 +259,45 @@ export function SettingsTab() {
                 </div>
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-none shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5 text-forest" />
+            What We Do Carousel
+          </CardTitle>
+          <CardDescription>
+            Manage the 5 images displayed in the "What We Do" section on the homepage.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {paddedWhatWeDo.map((img: string, index: number) => {
+              const titles = ['Eco Hotels', 'Tree Planting', 'Competitions', 'Research', 'Community']
+              return (
+                <div key={index} className="space-y-2">
+                  <div className="text-center">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{titles[index]}</span>
+                  </div>
+                  <ImageUpload 
+                    value={img}
+                    onChange={(url) => {
+                      const newImages = [...paddedWhatWeDo]
+                      newImages[index] = url
+                      updateWhatWeDoImages(newImages)
+                    }}
+                    onRemove={() => {
+                      const newImages = [...paddedWhatWeDo]
+                      newImages[index] = ''
+                      updateWhatWeDoImages(newImages)
+                    }}
+                  />
+                </div>
+              )
+            })}
           </div>
         </CardContent>
       </Card>

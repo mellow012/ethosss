@@ -1,53 +1,45 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET() {
   try {
     const [
-      stats,
-      totalTrees,
-      userCount,
-      hotelCount,
-      winnerCount,
-      uniqueRegionsSite,
-      uniqueRegionsHotel
+      { data: stats, error: statsError },
+      { data: sites, error: sitesError },
+      { count: userCount, error: userError },
+      { count: hotelCount, error: hotelError },
+      { count: winnerCount, error: winnerError },
+      { data: hotelRegions, error: hotelRegionsError }
     ] = await Promise.all([
-      db.impactStat.findMany({
-        orderBy: { order: "asc" },
-      }),
-      db.plantingSite.aggregate({
-        _sum: { treesPlanted: true },
-      }),
-      db.user.count(),
-      db.hotel.count(),
-      db.competitionEntry.count({
-        where: { status: "winner" },
-      }),
-      db.plantingSite.groupBy({
-        by: ['region'],
-      }),
-      db.hotel.groupBy({
-        by: ['region'],
-      }),
+      supabaseAdmin.from('ImpactStat').select('*').order('order', { ascending: true }),
+      supabaseAdmin.from('PlantingSite').select('treesPlanted, region'),
+      supabaseAdmin.from('User').select('*', { count: 'exact', head: true }),
+      supabaseAdmin.from('Hotel').select('*', { count: 'exact', head: true }),
+      supabaseAdmin.from('CompetitionEntry').select('*', { count: 'exact', head: true }).eq('status', 'winner'),
+      supabaseAdmin.from('Hotel').select('region')
     ]);
 
-    const allRegions = new Set([
-      ...uniqueRegionsSite.map(r => r.region),
-      ...uniqueRegionsHotel.map(r => r.region)
-    ]);
+    if (statsError || sitesError || userError || hotelError || winnerError || hotelRegionsError) {
+      throw statsError || sitesError || userError || hotelError || winnerError || hotelRegionsError;
+    }
 
-    const updatedStats = stats.map((stat) => {
+    const totalTreesPlanted = (sites || []).reduce((sum, site) => sum + (site.treesPlanted || 0), 0);
+    const siteRegions = (sites || []).map(s => s.region);
+    const allHotelRegions = (hotelRegions || []).map(h => h.region);
+    const allRegions = new Set([...siteRegions, ...allHotelRegions]);
+
+    const updatedStats = (stats || []).map((stat) => {
       switch (stat.label) {
         case "Trees Planted":
-          return { ...stat, value: (totalTrees._sum.treesPlanted || 0).toString() };
+          return { ...stat, value: totalTreesPlanted.toString() };
         case "Active Members":
-          return { ...stat, value: userCount.toString() };
+          return { ...stat, value: (userCount || 0).toString() };
         case "UK Regions":
           return { ...stat, value: allRegions.size.toString() };
         case "Eco Hotels":
-          return { ...stat, value: hotelCount.toString() };
+          return { ...stat, value: (hotelCount || 0).toString() };
         case "Competitions Won":
-          return { ...stat, value: winnerCount.toString() };
+          return { ...stat, value: (winnerCount || 0).toString() };
         default:
           return stat;
       }
@@ -62,4 +54,3 @@ export async function GET() {
     );
   }
 }
-

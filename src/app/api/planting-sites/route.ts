@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
-    const sites = await db.plantingSite.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const { data: sites, error } = await supabaseAdmin
+      .from('PlantingSite')
+      .select('*')
+      .order('createdAt', { ascending: false });
+
+    if (error) throw error;
 
     return NextResponse.json({ sites });
   } catch (error: any) {
@@ -52,8 +55,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const site = await db.plantingSite.create({
-      data: {
+    const { data: site, error } = await supabaseAdmin
+      .from('PlantingSite')
+      .insert({
         name,
         region,
         latitude: parseFloat(latitude),
@@ -65,8 +69,11 @@ export async function POST(request: NextRequest) {
         description: description || "",
         area: area || "",
         image: image || "",
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ site }, { status: 201 });
   } catch (error: any) {
@@ -122,20 +129,18 @@ export async function PUT(request: NextRequest) {
     if (area !== undefined) updateData.area = area;
     if (image !== undefined) updateData.image = image;
 
-    const site = await db.plantingSite.update({
-      where: { id },
-      data: updateData,
-    });
+    const { data: site, error } = await supabaseAdmin
+      .from('PlantingSite')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ site });
   } catch (error: any) {
     console.error("PlantingSites PUT error:", error);
-    if (error.code === "P2025") {
-      return NextResponse.json(
-        { error: "Site not found" },
-        { status: 404 }
-      );
-    }
     return NextResponse.json(
       { error: "Failed to update planting site", details: error.message },
       { status: 500 }
@@ -161,9 +166,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    await db.plantingSite.delete({
-      where: { id },
-    });
+    const { error } = await supabaseAdmin
+      .from('PlantingSite')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     return NextResponse.json({ message: "Site deleted successfully" });
   } catch (error: any) {

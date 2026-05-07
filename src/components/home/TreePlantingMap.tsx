@@ -64,10 +64,10 @@ function MapInner({ sites }: { sites: TreePlantingSite[] }) {
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return
 
-    // Initialize map centered on UK
+    // Initialize map centered on Southern Africa (Malawi area)
     const map = L.map(mapRef.current, {
-      center: [54.5, -3.5],
-      zoom: 6,
+      center: [-13.25, 34.30],
+      zoom: 5,
       zoomControl: false,
       scrollWheelZoom: true,
       attributionControl: true,
