@@ -82,7 +82,26 @@ export function UpcomingEvents() {
   }
 
   if (!loading && events.length === 0) {
-    return null
+    return (
+      <section className="py-20 bg-muted/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <Calendar className="h-16 w-16 text-muted-foreground/30 mx-auto mb-6" />
+          <h2 className="text-3xl font-bold mb-4">No Upcoming Events</h2>
+          <p className="text-muted-foreground max-w-lg mx-auto mb-10">
+            We don't have any events scheduled right now, but we're planning something exciting! 
+            Check back soon or view our past activities.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/activities')}
+            className="group px-8 py-6 text-lg"
+          >
+            View Full Calendar
+            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </div>
+      </section>
+    )
   }
 
   const event = events[current]

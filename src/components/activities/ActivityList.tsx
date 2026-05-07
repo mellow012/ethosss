@@ -234,6 +234,19 @@ export function ActivityList() {
     <div className="space-y-10">
       {/* Search and Filters */}
       <div className="bg-background/50 backdrop-blur-md sticky top-16 z-30 py-6 border-b">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold">Activities Hub</h2>
+            <p className="text-sm text-muted-foreground">Find challenges, events, and community activities</p>
+          </div>
+          <Button 
+            onClick={() => router.push('/activities')}
+            className="bg-forest hover:bg-forest-dark text-primary-foreground gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            View Full Calendar
+          </Button>
+        </div>
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
