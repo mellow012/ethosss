@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, date, location, image, link, isActive } = body;
+    const { title, description, date, location, image, link, isActive, recap, competitionId } = body;
 
     const { data: event, error } = await supabaseAdmin
       .from('Event')
@@ -62,6 +62,8 @@ export async function POST(request: NextRequest) {
         image,
         link,
         isActive: isActive !== undefined ? isActive : true,
+        recap,
+        competitionId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
@@ -88,7 +90,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, title, description, date, location, image, link, isActive } = body;
+    const { id, title, description, date, location, image, link, isActive, recap, competitionId } = body;
 
     if (!id) {
       return NextResponse.json({ error: "Event ID is required" }, { status: 400 });
@@ -102,6 +104,8 @@ export async function PUT(request: NextRequest) {
     if (image !== undefined) updateData.image = image;
     if (link !== undefined) updateData.link = link;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (recap !== undefined) updateData.recap = recap;
+    if (competitionId !== undefined) updateData.competitionId = competitionId;
     updateData.updatedAt = new Date().toISOString();
 
     const { data: event, error } = await supabaseAdmin

@@ -170,6 +170,23 @@ interface PlantingSite {
 }
 
 
+const fuzzyMatch = (text: string | null | undefined, query: string) => {
+  if (!query) return true;
+  if (!text) return false;
+  const q = query.toLowerCase();
+  const t = text.toLowerCase();
+  if (t.includes(q)) return true;
+  
+  // Simple fuzzy: check if characters appear in sequence
+  let i = 0;
+  for (const char of q) {
+    i = t.indexOf(char, i);
+    if (i === -1) return false;
+    i++;
+  }
+  return true;
+};
+
 export function AdminDashboard() {
   const { data: session } = useSession()
   const { setSelectedId, setView } = useAppStore()
@@ -216,6 +233,7 @@ export function AdminDashboard() {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false)
   const [roleUser, setRoleUser] = useState<UserItem | null>(null)
   const [newRole, setNewRole] = useState('')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const fetchData = async () => {
     setLoading(true)
@@ -405,6 +423,20 @@ export function AdminDashboard() {
         </div>
       </div>
 
+      {mobile && (
+        <div className="px-4 py-2 border-b border-border">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={`Search...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 w-full bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-forest"
+            />
+          </div>
+        </div>
+      )}
+
       <nav className="flex-1 p-4 space-y-1">
         {[
           { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -455,7 +487,6 @@ export function AdminDashboard() {
     </div>
   )
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -488,7 +519,9 @@ export function AdminDashboard() {
             <div className="relative hidden sm:block">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder={`Search ${activeTab === 'overview' ? 'activities' : activeTab}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-9 w-64 bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-forest"
               />
             </div>
@@ -550,23 +583,6 @@ export function AdminDashboard() {
 
         <div className="flex-1 overflow-y-auto p-8">
           <div className="max-w-6xl mx-auto space-y-8">
-            {/* Header with Search and Actions */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={`Search ${activeTab === 'overview' ? 'activities' : activeTab}...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-card border-none shadow-sm h-11 rounded-xl"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl border-none shadow-sm bg-card" onClick={fetchData}>
-                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
-              </div>
-            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
               
@@ -621,7 +637,7 @@ export function AdminDashboard() {
                           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
                         ) : (
                           <>
-                            {posts.slice(0, 2).map(post => (
+                            {posts.filter(p => fuzzyMatch(p.title, searchQuery)).slice(0, 2).map(post => (
                               <div key={post.id} className="flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-all border border-transparent hover:border-border/50">
                                 <div className="h-12 w-12 rounded-xl bg-forest/10 flex items-center justify-center text-forest shrink-0">
                                   <FileText className="h-5 w-5" />
@@ -638,7 +654,7 @@ export function AdminDashboard() {
                                 </Button>
                               </div>
                             ))}
-                            {entries.slice(0, 2).map(entry => (
+                            {entries.filter(e => fuzzyMatch(e.user.name, searchQuery) || fuzzyMatch(e.competition.title, searchQuery)).slice(0, 2).map(entry => (
                               <div key={entry.id} className="flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-all border border-transparent hover:border-border/50">
                                 <div className="h-12 w-12 rounded-xl bg-sunlight/10 flex items-center justify-center text-sunlight shrink-0">
                                   <Trophy className="h-5 w-5" />
@@ -665,7 +681,7 @@ export function AdminDashboard() {
 
               <TabsContent value="content" className="space-y-8 mt-0">
                 {/* Latest Content Highlight */}
-                {allContent.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
+                {allContent.filter(p => fuzzyMatch(p.title, searchQuery)).length > 0 && (
                   <Card className="border-none shadow-sm overflow-hidden bg-forest text-white group cursor-pointer" onClick={() => router.push(allContent[0].contentType === 'post' ? `/blog/${allContent[0].id}` : '#')}>
                     <div className="flex flex-col md:flex-row h-full">
                       <div className="w-full md:w-1/3 aspect-video md:aspect-auto relative overflow-hidden">
@@ -713,7 +729,7 @@ export function AdminDashboard() {
                     Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl" />)
                   ) : (
                     allContent
-                      .filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()) || (item.category?.name || '').toLowerCase().includes(searchQuery.toLowerCase()))
+                      .filter(item => fuzzyMatch(item.title, searchQuery) || fuzzyMatch(item.category?.name || '', searchQuery))
                       .map((item) => (
                       <Card key={item.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden">
                         <div className="aspect-video relative overflow-hidden">
@@ -802,7 +818,7 @@ export function AdminDashboard() {
                     Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-72 w-full rounded-2xl" />)
                   ) : (
                     hotels
-                      .filter(hotel => hotel.name.toLowerCase().includes(searchQuery.toLowerCase()) || hotel.city.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .filter(hotel => fuzzyMatch(hotel.name, searchQuery) || fuzzyMatch(hotel.city, searchQuery) || fuzzyMatch(hotel.region, searchQuery))
                       .map((hotel) => (
                       <Card key={hotel.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden">
                         <div className="aspect-video relative overflow-hidden">
@@ -873,7 +889,7 @@ export function AdminDashboard() {
                     Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl" />)
                   ) : (
                     competitions
-                      .filter(comp => comp.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .filter(comp => fuzzyMatch(comp.title, searchQuery))
                       .map((comp) => (
                         <Card key={comp.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden">
                           <div className="p-6 bg-forest text-white relative overflow-hidden">
@@ -970,7 +986,7 @@ export function AdminDashboard() {
                     Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl" />)
                   ) : (
                     entries
-                      .filter(entry => entry.user.name.toLowerCase().includes(searchQuery.toLowerCase()) || entry.competition.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .filter(entry => fuzzyMatch(entry.user.name, searchQuery) || fuzzyMatch(entry.competition.title, searchQuery))
                       .map((entry) => (
                       <Card key={entry.id} className="border-none shadow-sm hover:shadow-md transition-all overflow-hidden">
                         <CardContent className="p-6">
@@ -1029,7 +1045,7 @@ export function AdminDashboard() {
                         Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
                       ) : (
                         users
-                          .filter(user => user.name?.toLowerCase().includes(searchQuery.toLowerCase()) || user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+                          .filter(user => fuzzyMatch(user.name || '', searchQuery) || fuzzyMatch(user.email, searchQuery))
                           .map((user) => (
                             <div key={user.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
                               <div className="flex items-center gap-4">
@@ -1069,7 +1085,7 @@ export function AdminDashboard() {
                     Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl" />)
                   ) : (
                     sites
-                      .filter(site => site.name.toLowerCase().includes(searchQuery.toLowerCase()) || site.region.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .filter(site => fuzzyMatch(site.name, searchQuery) || fuzzyMatch(site.region, searchQuery))
                       .map((site) => (
                         <Card key={site.id} className="border-none shadow-sm group overflow-hidden hover:shadow-xl transition-all duration-300">
                           <div className="aspect-[2/1] relative overflow-hidden">
@@ -1121,7 +1137,7 @@ export function AdminDashboard() {
                     Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-72 w-full rounded-2xl" />)
                   ) : (
                     stories
-                      .filter(story => story.businessName.toLowerCase().includes(searchQuery.toLowerCase()) || story.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .filter(story => fuzzyMatch(story.businessName, searchQuery) || fuzzyMatch(story.title, searchQuery))
                       .map((story) => (
                       <Card key={story.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden">
                         <div className="aspect-video relative overflow-hidden">

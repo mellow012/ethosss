@@ -29,6 +29,7 @@ import { useSession } from 'next-auth/react'
 import { useAppStore } from '@/lib/store'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
+import { ImagePreview } from '@/components/ui/image-preview'
 
 interface Competition {
   id: string
@@ -43,6 +44,8 @@ interface Competition {
   endDate: string
   isActive: boolean
   maxEntries: number | null
+  recap: string | null
+  winnerName: string | null
   _count: { entries: number }
 }
 
@@ -185,18 +188,19 @@ export function CompetitionDetail({ id }: { id: string }) {
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Button
           variant="ghost"
-          onClick={() => router.push('/competitions')}
+          onClick={() => router.push('/activities')}
           className="mb-6 -ml-2"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Competitions
+          Back to Activities
         </Button>
 
         {/* Cover Image */}
         {competition.coverImage && (
-          <div
-            className="w-full h-64 sm:h-80 rounded-xl overflow-hidden bg-cover bg-center mb-8"
-            style={{ backgroundImage: `url(${competition.coverImage})` }}
+          <ImagePreview 
+            src={competition.coverImage} 
+            alt={competition.title} 
+            className="w-full h-64 sm:h-80 rounded-xl overflow-hidden mb-8"
           />
         )}
 
@@ -254,6 +258,36 @@ export function CompetitionDetail({ id }: { id: string }) {
               {competition._count.entries} entries
             </span>
           </div>
+
+          {/* Recap / Results Section */}
+          {(competition.recap || competition.winnerName) && status === 'ended' && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-8 p-6 bg-forest/5 border border-forest/20 rounded-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Trophy className="h-24 w-24 text-forest" />
+              </div>
+              <h2 className="text-xl font-bold text-forest mb-4 flex items-center gap-2">
+                <Trophy className="h-5 w-5" /> Competition Results
+              </h2>
+              {competition.winnerName && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground uppercase tracking-wider font-bold">Winner</p>
+                  <p className="text-2xl font-bold text-foreground">{competition.winnerName}</p>
+                </div>
+              )}
+              {competition.recap && (
+                <div>
+                  <p className="text-sm text-muted-foreground uppercase tracking-wider font-bold mb-2">Recap</p>
+                  <div className="prose prose-slate dark:prose-invert max-w-none text-foreground/80">
+                    <ReactMarkdown>{competition.recap}</ReactMarkdown>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
         </header>
 
         {/* Description */}

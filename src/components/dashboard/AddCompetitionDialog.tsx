@@ -53,6 +53,8 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
     conditionType: 'manual',
     conditionValue: '',
     totalRounds: 1,
+    recap: '',
+    winnerName: '',
   })
 
   const [rounds, setRounds] = useState<{ title: string; objective: string; isFinal: boolean }[]>([
@@ -75,6 +77,8 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
         conditionType: editingCompetition.conditionType || 'manual',
         conditionValue: editingCompetition.conditionValue || '',
         totalRounds: editingCompetition.totalRounds || 1,
+        recap: editingCompetition.recap || '',
+        winnerName: editingCompetition.winnerName || '',
       })
     }
   }, [editingCompetition])
@@ -129,6 +133,8 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
           conditionType: 'manual',
           conditionValue: '',
           totalRounds: 1,
+          recap: '',
+          winnerName: '',
         })
         setRounds([{ title: 'Round 1', objective: '', isFinal: true }])
       } else {
@@ -352,6 +358,34 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
               onRemove={() => setFormData({ ...formData, coverImage: '' })}
             />
           </div>
+
+          {editingCompetition && (
+            <div className="space-y-4 pt-4 border-t border-dashed">
+              <h3 className="text-sm font-bold flex items-center gap-2 text-forest">
+                <Trophy className="h-4 w-4" /> Post-Competition Results
+              </h3>
+              <div className="space-y-2">
+                <Label htmlFor="comp-winner">Winner Name</Label>
+                <Input
+                  id="comp-winner"
+                  placeholder="e.g. John Doe"
+                  value={formData.winnerName}
+                  onChange={(e) => setFormData({ ...formData, winnerName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="comp-recap">Recap / Outcome</Label>
+                <Textarea
+                  id="comp-recap"
+                  placeholder="Describe how the competition went..."
+                  value={formData.recap}
+                  onChange={(e) => setFormData({ ...formData, recap: e.target.value })}
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
+
           <DialogFooter className="pt-4">
             <Button type="submit" disabled={loading} className="w-full bg-forest hover:bg-forest-dark text-primary-foreground">
               {loading ? (editingCompetition ? 'Updating...' : 'Creating...') : (editingCompetition ? 'Update Competition' : 'Create Competition')}

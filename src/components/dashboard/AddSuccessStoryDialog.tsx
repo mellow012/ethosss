@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Target, Image as ImageIcon } from 'lucide-react'
+import { Plus, Target, Building2, Image as ImageIcon } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -56,16 +56,18 @@ export function AddSuccessStoryDialog({ onSuccess, editingItem, open: externalOp
         featured: editingItem.featured ?? false,
       })
     } else {
-      resetForm()
+      setFormData({
+        title: '',
+        businessName: '',
+        category: '',
+        impact: '',
+        description: '',
+        image: '',
+        content: '',
+        featured: false,
+      })
     }
   }, [editingItem, open])
-
-  const resetForm = () => {
-    setFormData({
-      title: '', businessName: '', category: '', impact: '',
-      description: '', image: '', content: '', featured: false,
-    })
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -82,10 +84,9 @@ export function AddSuccessStoryDialog({ onSuccess, editingItem, open: externalOp
       })
 
       if (res.ok) {
-        toast.success(editingItem ? 'Updated successfully' : 'Created successfully')
+        toast.success(editingItem ? 'Success story updated' : 'Success story created')
         setOpen(false)
         onSuccess()
-        if (!editingItem) resetForm()
       } else {
         const data = await res.json()
         toast.error(data.error || 'Failed to save')
@@ -100,26 +101,38 @@ export function AddSuccessStoryDialog({ onSuccess, editingItem, open: externalOp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {!editingItem && <Button size="sm" variant="outline" className="h-8">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Story
-        </Button>}
+        {!editingItem && (
+          <Button size="sm" variant="outline" className="h-8">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Story
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editingItem ? 'Edit Success Story' : 'New Success Story'}</DialogTitle>
           <DialogDescription>
-            Share how Ethoss helped an eco-business or startup grow.
+            Highlight a business or individual making a real difference.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="story-title">Story Title *</Label>
+            <Input
+              id="story-title"
+              placeholder="e.g. Revolutionizing Waste Management"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="businessName">Business Name *</Label>
+              <Label htmlFor="biz-name">Business Name *</Label>
               <Input
-                id="businessName"
-                placeholder="e.g. GreenBrick Malawi"
+                id="biz-name"
+                placeholder="e.g. GreenCycle Ltd"
                 value={formData.businessName}
                 onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                 required
@@ -129,7 +142,7 @@ export function AddSuccessStoryDialog({ onSuccess, editingItem, open: externalOp
               <Label htmlFor="category">Category *</Label>
               <Input
                 id="category"
-                placeholder="e.g. Sustainable Construction"
+                placeholder="e.g. Recycling"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 required
@@ -138,21 +151,10 @@ export function AddSuccessStoryDialog({ onSuccess, editingItem, open: externalOp
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">Short Tagline *</Label>
-            <Input
-              id="title"
-              placeholder="e.g. Pioneering Eco-Friendly Bricks"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="impact">Impact Metric *</Label>
+            <Label htmlFor="impact">Impact Achievement *</Label>
             <Input
               id="impact"
-              placeholder="e.g. 500+ Houses Built"
+              placeholder="e.g. 5,000kg plastic collected"
               value={formData.impact}
               onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
               required
@@ -160,19 +162,30 @@ export function AddSuccessStoryDialog({ onSuccess, editingItem, open: externalOp
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Short Description (for card) *</Label>
+            <Label htmlFor="desc">Short Quote/Description *</Label>
             <Textarea
-              id="description"
-              placeholder="Brief summary of the success story..."
+              id="desc"
+              placeholder="A powerful one-liner about the success..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
+              rows={2}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="image">Cover Image</Label>
+            <Label htmlFor="content">Full Content (Optional)</Label>
+            <Textarea
+              id="content"
+              placeholder="Detailed story and metrics..."
+              value={formData.content}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              rows={5}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Cover Image *</Label>
             <ImageUpload
               value={formData.image}
               onChange={(url) => setFormData({ ...formData, image: url })}
@@ -180,31 +193,19 @@ export function AddSuccessStoryDialog({ onSuccess, editingItem, open: externalOp
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="content">Full Story (Markdown supported)</Label>
-            <Textarea
-              id="content"
-              placeholder="Details about the collaboration, challenges, and results..."
-              value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              rows={6}
-            />
-          </div>
-
-          <div className="flex items-center space-x-2 cursor-pointer">
+          <label className="flex items-center space-x-2 cursor-pointer">
             <input
               type="checkbox"
-              id="featured"
               checked={formData.featured}
               onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-              className="rounded border-border"
+              className="rounded border-forest text-forest focus:ring-forest"
             />
-            <Label htmlFor="featured" className="cursor-pointer">Feature on Homepage</Label>
-          </div>
+            <span className="text-sm font-medium">Featured on Eco-Business page</span>
+          </label>
 
           <DialogFooter className="pt-4">
-            <Button type="submit" disabled={loading} className="w-full bg-forest hover:bg-forest-dark text-primary-foreground">
-              {loading ? (editingItem ? 'Updating...' : 'Creating...') : (editingItem ? 'Save Story' : 'Publish Story')}
+            <Button type="submit" disabled={loading} className="w-full bg-forest hover:bg-forest-dark text-white font-bold py-6">
+              {loading ? 'Saving...' : editingItem ? 'Update Story' : 'Publish Success Story'}
             </Button>
           </DialogFooter>
         </form>

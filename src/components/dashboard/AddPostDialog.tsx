@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { VideoUpload } from '@/components/ui/video-upload'
 
 interface AddContentDialogProps {
   onSuccess: () => void
@@ -40,6 +41,7 @@ export function AddContentDialog({ onSuccess, editingItem, type = 'post', open: 
 
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<any[]>([])
+  const [competitions, setCompetitions] = useState<any[]>([])
   const [contentType, setContentType] = useState<'post' | 'event'>(type)
 
   useEffect(() => {
@@ -61,10 +63,14 @@ export function AddContentDialog({ onSuccess, editingItem, type = 'post', open: 
     location: '',
     link: '',
     isActive: true,
+    videoUrl: '',
+    recap: '',
+    competitionId: '',
   })
 
   useEffect(() => {
     fetchCategories()
+    fetchCompetitions()
   }, [])
 
   useEffect(() => {
@@ -84,6 +90,9 @@ export function AddContentDialog({ onSuccess, editingItem, type = 'post', open: 
         location: editingItem.location || '',
         link: editingItem.link || '',
         isActive: editingItem.isActive ?? true,
+        videoUrl: editingItem.videoUrl || '',
+        recap: editingItem.recap || '',
+        competitionId: editingItem.competitionId || '',
       })
     } else {
       resetForm()
@@ -94,7 +103,8 @@ export function AddContentDialog({ onSuccess, editingItem, type = 'post', open: 
     setFormData({
       title: '', slug: '', excerpt: '', content: '', coverImage: '',
       published: false, featured: false, categoryId: '', readingTime: '',
-      date: '', location: '', link: '', isActive: true,
+      date: '', location: '', link: '', isActive: true, videoUrl: '', recap: '',
+      competitionId: '',
     })
   }
 
@@ -105,6 +115,16 @@ export function AddContentDialog({ onSuccess, editingItem, type = 'post', open: 
       setCategories(data.categories || [])
     } catch {
       console.error('Failed to fetch categories')
+    }
+  }
+
+  const fetchCompetitions = async () => {
+    try {
+      const res = await fetch('/api/competitions?limit=100')
+      const data = await res.json()
+      setCompetitions(data.competitions || [])
+    } catch {
+      console.error('Failed to fetch competitions')
     }
   }
 
@@ -125,6 +145,8 @@ export function AddContentDialog({ onSuccess, editingItem, type = 'post', open: 
         image: formData.coverImage,
         link: formData.link,
         isActive: formData.isActive,
+        recap: formData.recap,
+        competitionId: formData.competitionId || null,
       } : {
         id: editingItem?.id,
         ...formData,
@@ -254,6 +276,42 @@ export function AddContentDialog({ onSuccess, editingItem, type = 'post', open: 
                 </div>
               </div>
 
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between">
+                  <Label>Featured Video</Label>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-[10px] h-6 px-2 border"
+                    onClick={() => {
+                      // Clear the field when switching or toggling
+                      setFormData({ ...formData, videoUrl: '' })
+                    }}
+                  >
+                    {formData.videoUrl?.startsWith('http') && !formData.videoUrl?.includes('supabase') ? 'Switch to Upload' : 'Switch to URL'}
+                  </Button>
+                </div>
+                
+                {formData.videoUrl?.startsWith('http') && !formData.videoUrl?.includes('supabase') ? (
+                  <div className="space-y-2">
+                    <Input
+                      id="post-video"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={formData.videoUrl}
+                      onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    />
+                    <p className="text-[10px] text-muted-foreground italic">Paste a YouTube or Vimeo link</p>
+                  </div>
+                ) : (
+                  <VideoUpload
+                    value={formData.videoUrl}
+                    onChange={(url) => setFormData({ ...formData, videoUrl: url })}
+                    onRemove={() => setFormData({ ...formData, videoUrl: '' })}
+                  />
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="post-excerpt">Excerpt</Label>
                 <Textarea
@@ -300,6 +358,37 @@ export function AddContentDialog({ onSuccess, editingItem, type = 'post', open: 
                   onChange={(e) => setFormData({ ...formData, link: e.target.value })}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="event-competition">Link to Competition (Optional)</Label>
+                <Select value={formData.competitionId} onValueChange={(v) => setFormData({ ...formData, competitionId: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a competition" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {competitions.map((comp) => (
+                      <SelectItem key={comp.id} value={comp.id}>
+                        {comp.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground">Linking allow users to join the challenge directly from the event page.</p>
+              </div>
+
+              {editingItem && (
+                <div className="space-y-2 pt-4 border-t border-dashed">
+                  <Label htmlFor="event-recap">Event Recap / Outcome</Label>
+                  <Textarea
+                    id="event-recap"
+                    placeholder="How did the event go? (Shows once event is over)"
+                    value={formData.recap}
+                    onChange={(e) => setFormData({ ...formData, recap: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+              )}
             </>
           )}
 

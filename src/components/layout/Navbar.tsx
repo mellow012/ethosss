@@ -37,9 +37,9 @@ import { usePathname, useRouter } from 'next/navigation'
 const navLinks: { label: string; href: string }[] = [
   { label: 'Home', href: '/' },
   { label: 'Blog', href: '/blog' },
+  { label: 'Activities', href: '/activities' },
   { label: 'Hotels', href: '/hotels' },
   { label: 'Eco-Business', href: '/eco-business' },
-  { label: 'Competitions', href: '/competitions' },
 ]
 
 export function Navbar() {

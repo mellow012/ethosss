@@ -81,6 +81,8 @@ export async function POST(request: NextRequest) {
       conditionType,
       conditionValue,
       totalRounds,
+      recap,
+      winnerName,
     } = body;
 
     if (!title || !slug || !description || !prize || !startDate || !endDate) {
@@ -108,6 +110,8 @@ export async function POST(request: NextRequest) {
         conditionType,
         conditionValue,
         totalRounds: totalRounds ?? 1,
+        recap,
+        winnerName,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
@@ -154,6 +158,8 @@ export async function PUT(request: NextRequest) {
       conditionType,
       conditionValue,
       totalRounds,
+      recap,
+      winnerName,
     } = body;
 
     if (!id) {
@@ -172,9 +178,10 @@ export async function PUT(request: NextRequest) {
     if (endDate !== undefined) updateData.endDate = new Date(endDate).toISOString();
     if (isActive !== undefined) updateData.isActive = isActive;
     if (maxEntries !== undefined) updateData.maxEntries = maxEntries;
-    if (conditionType !== undefined) updateData.conditionType = conditionType;
     if (conditionValue !== undefined) updateData.conditionValue = conditionValue;
     if (totalRounds !== undefined) updateData.totalRounds = totalRounds;
+    if (recap !== undefined) updateData.recap = recap;
+    if (winnerName !== undefined) updateData.winnerName = winnerName;
     updateData.updatedAt = new Date().toISOString();
 
     const { data: competition, error } = await supabaseAdmin

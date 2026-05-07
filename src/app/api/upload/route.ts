@@ -4,9 +4,12 @@ import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
 
-// Allowed file types and max size (5MB)
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-const MAX_SIZE = 5 * 1024 * 1024 
+// Allowed file types and max size (50MB for videos)
+const ALLOWED_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'
+]
+const MAX_SIZE = 50 * 1024 * 1024 
 
 export async function POST(request: Request) {
   try {

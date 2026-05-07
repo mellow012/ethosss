@@ -23,6 +23,7 @@ import { useSession } from 'next-auth/react'
 import { useAppStore } from '@/lib/store'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
+import { ImagePreview } from '@/components/ui/image-preview'
 import { ShareButtons } from './ShareButtons'
 import { MediaGallery } from './MediaGallery'
 
@@ -213,13 +214,14 @@ export function BlogDetail({ id }: { id: string }) {
             initial={{ scale: 1.05, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="w-full h-64 sm:h-80 lg:h-96 rounded-2xl overflow-hidden shadow-xl mb-8 relative"
+            className="w-full h-64 sm:h-80 lg:h-96 rounded-2xl overflow-hidden shadow-xl mb-8 relative group"
           >
-            <div
-              className="w-full h-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${post.coverImage})` }}
+            <ImagePreview 
+              src={post.coverImage} 
+              alt={post.title} 
+              className="w-full h-full"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
           </motion.div>
         )}
 
@@ -311,10 +313,19 @@ export function BlogDetail({ id }: { id: string }) {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
+              ) : post.videoUrl.includes('vimeo.com') ? (
+                <iframe
+                  src={`https://player.vimeo.com/video/${post.videoUrl.split('/').pop()}`}
+                  className="w-full h-full border-none"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-white/50">
-                  <p>Video player available for YouTube links</p>
-                </div>
+                <video 
+                  src={post.videoUrl} 
+                  controls 
+                  className="w-full h-full object-contain"
+                />
               )}
             </div>
           </div>

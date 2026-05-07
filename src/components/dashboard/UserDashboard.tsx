@@ -14,6 +14,7 @@ import {
   XCircle,
   Star,
   Award,
+  Ticket,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -25,6 +26,19 @@ import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { startTransition } from 'react'
+
+interface Booking {
+  id: string
+  eventId: string
+  status: string
+  createdAt: string
+  Event: {
+    id: string
+    title: string
+    date: string
+    location: string
+  }
+}
 
 interface Entry {
   id: string
@@ -53,6 +67,7 @@ export function UserDashboard() {
   const { data: session } = useSession()
   const router = useRouter()
   const [entries, setEntries] = useState<Entry[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -107,6 +122,9 @@ export function UserDashboard() {
           .then((entryArrays) => {
             setEntries(entryArrays.flat())
           })
+          .then(() => fetch('/api/events/register'))
+          .then(res => res.json())
+          .then(data => setBookings(data.bookings || []))
           .catch(() => setEntries([]))
           .finally(() => setLoading(false))
       })
@@ -208,6 +226,12 @@ export function UserDashboard() {
               value: wins,
               icon: Award,
               color: 'text-sunlight',
+            },
+            {
+              label: 'Booked Events',
+              value: bookings.length,
+              icon: Ticket,
+              color: 'text-forest',
             },
             {
               label: 'Member Since',
@@ -315,6 +339,68 @@ export function UserDashboard() {
                     </div>
                   )
                 })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* My Bookings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-forest" />
+              My Event Bookings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <Skeleton key={i} className="h-20 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : bookings.length === 0 ? (
+              <div className="text-center py-10">
+                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">
+                  You haven&apos;t booked any events yet
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/activities')}
+                  className="mt-4"
+                >
+                  Browse Activities
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {bookings.map((booking) => (
+                  <div
+                    key={booking.id}
+                    className="flex items-start gap-4 p-4 rounded-xl border border-forest/10 bg-forest/5 hover:bg-forest/10 transition-all cursor-pointer"
+                    onClick={() => router.push(`/?view=event-detail&id=${booking.eventId}`)}
+                  >
+                    <div className="h-10 w-10 rounded-full bg-forest flex items-center justify-center shrink-0 shadow-lg shadow-forest/20">
+                      <Ticket className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-base truncate">{booking.Event.title}</h4>
+                        <Badge className="bg-forest text-primary-foreground border-none text-[10px]">BOOKED</Badge>
+                      </div>
+                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" /> {format(new Date(booking.Event.date), 'dd MMM yyyy')}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {format(new Date(booking.Event.date), 'HH:mm')}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-1">{booking.Event.location}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
