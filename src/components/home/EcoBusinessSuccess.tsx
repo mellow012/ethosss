@@ -84,27 +84,40 @@ export function EcoBusinessSuccess() {
               <Target className="h-4 w-4" />
               Impact Stories
             </motion.div>
-            <h2 className="text-3xl md:text-5xl font-bold text-foreground leading-tight">
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground leading-tight mb-4">
               Empowering the Next Generation of <span className="text-gold">Eco-Leaders</span>
             </h2>
+            <p className="text-muted-foreground text-lg">
+              Beyond business growth, we are dedicated to foundational change. We have been actively 
+              supporting local pupils with essential educational materials to foster a new era of environmental consciousness.
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-3 items-center">
             <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={prev}
-              className="rounded-full h-12 w-12 border-border hover:bg-forest hover:text-white transition-all"
+              variant="outline"
+              onClick={() => router.push('/competitions')} // Placeholder or link to a submission page
+              className="rounded-full border-forest text-forest hover:bg-forest hover:text-white font-bold px-6"
             >
-              <ChevronLeft className="h-6 w-6" />
+              Share Your Story
             </Button>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={next}
-              className="rounded-full h-12 w-12 border-border hover:bg-forest hover:text-white transition-all"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={prev}
+                className="rounded-full h-12 w-12 border-border hover:bg-forest hover:text-white transition-all"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={next}
+                className="rounded-full h-12 w-12 border-border hover:bg-forest hover:text-white transition-all"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </Button>
+            </div>
           </div>
         </div>
 

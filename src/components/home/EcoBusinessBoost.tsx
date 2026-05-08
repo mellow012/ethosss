@@ -32,11 +32,6 @@ export function EcoBusinessBoost() {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <div className="inline-flex items-center gap-2 bg-sunlight/20 text-sunlight px-4 py-2 rounded-full text-sm font-bold tracking-wider uppercase mb-6">
-                <TrendingUp className="h-4 w-4" />
-                Empowering Green Entrepreneurs
-              </div>
-              
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
                 Eco-Business <br />
                 <span className="text-sunlight">Capital Boost</span>
@@ -44,7 +39,7 @@ export function EcoBusinessBoost() {
               
               <p className="text-white/70 text-lg md:text-xl leading-relaxed mb-10 max-w-xl">
                 Fuel your environmental innovation. We provide the resources, mentorship, and 
-                strategic capital needed to scale your youth-led eco-business across Southern Africa.
+                strategic capital needed to scale your business impact across Southern Africa.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">

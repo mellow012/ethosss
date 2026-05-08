@@ -126,9 +126,8 @@ export function Footer() {
                 />
               </Link>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Empowering youth through green innovation and sustainable travel.
-                A purpose-driven social enterprise committed to the green
-                economy, eco-friendly tourism, and innovation across Southern
+                Empowering innovation and sustainable travel.
+                A social enterprise committed to the economy, eco-friendly tourism, and innovation across Southern
                 Africa.
               </p>
               <div className="mt-4 space-y-2 text-sm text-muted-foreground">

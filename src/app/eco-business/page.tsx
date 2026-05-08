@@ -22,17 +22,13 @@ export default function EcoBusinessPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-              <div className="inline-flex items-center gap-2 bg-gold/20 text-gold px-4 py-2 rounded-full text-sm font-bold tracking-wider uppercase mb-8">
-                <Rocket className="h-4 w-4" />
-                Green Innovation Hub
-              </div>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-8">
-                Eco-Business <br />
-                <span className="text-gold">Capital Boost</span>
-              </h1>
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-8">
+              Eco-Business <br />
+              <span className="text-gold">Capital Boost</span>
+            </h1>
             <p className="text-white/70 text-lg md:text-xl leading-relaxed mb-12 max-w-3xl mx-auto">
-              We are on a mission to fuel the green economy by providing youth-led eco-businesses with the
-              strategic capital, expert mentorship, and regional networks they need to scale impact.
+              Fueling environmental innovation with the strategic capital, expert mentorship, 
+              and regional networks needed to scale impact across Southern Africa.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <Button size="lg" className="bg-gold hover:bg-gold-dark text-bark font-bold h-16 px-10 rounded-2xl group text-lg">

@@ -30,10 +30,10 @@ export function HeroSection() {
   }
 
   const heroImages = getHeroImages()
-  
+
   // Only use the default image as a fallback when settings are loaded and no images exist
   const [displayImages, setDisplayImages] = useState<string[]>([])
-  
+
   useEffect(() => {
     if (Object.keys(settings).length > 0) {
       const images = getHeroImages()
@@ -64,10 +64,9 @@ export function HeroSection() {
   }
 
   const content = {
-    subtitle: settings.hero_subtitle || 'Sustainable Travel & Green Economy Across Southern Africa',
-    eyebrow: settings.hero_eyebrow || 'Purpose-Driven. Youth-Led. Green.',
-    title: settings.hero_title || 'Ethosss — Empowering Youth Through Green Innovation',
-    description: settings.hero_description || 'We are a purpose-driven social enterprise operating across Southern Africa, committed to empowering young people through the green economy, eco-friendly tourism, and innovation.'
+    subtitle: settings.hero_subtitle || 'Sustainable Travel & Economy Across Southern Africa',
+    title: settings.hero_title || 'Ethosss — Empowering Innovation',
+    description: settings.hero_description || 'We are a social enterprise operating across Southern Africa, committed to empowering young people through the economy, eco-friendly tourism, and innovation.'
   }
 
   return (
@@ -109,16 +108,15 @@ export function HeroSection() {
           >
             <ChevronRight className="h-6 w-6" />
           </button>
-          
+
           {/* Indicators */}
           <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 flex gap-2">
             {displayImages.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentSlide(i)}
-                className={`h-1.5 transition-all rounded-full ${
-                  currentSlide === i ? 'w-10 bg-forest' : 'w-2 bg-white/30'
-                }`}
+                className={`h-1.5 transition-all rounded-full ${currentSlide === i ? 'w-10 bg-forest' : 'w-2 bg-white/30'
+                  }`}
               />
             ))}
           </div>
@@ -159,10 +157,6 @@ export function HeroSection() {
               {content.subtitle}
             </span>
           </motion.div>
-
-          <p className="text-[10px] sm:text-xs uppercase tracking-[0.4em] text-gold font-bold mb-6">
-            {content.eyebrow}
-          </p>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.1] tracking-tight drop-shadow-2xl mb-8">
             {content.title.split('—').map((part: string, i: number) => (
