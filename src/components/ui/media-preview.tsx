@@ -18,10 +18,22 @@ interface MediaPreviewProps {
   type?: string
   className?: string
   children?: React.ReactNode
+  isOpen?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function MediaPreview({ src, alt, type = 'image', className, children }: MediaPreviewProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export function MediaPreview({ 
+  src, 
+  alt, 
+  type = 'image', 
+  className, 
+  children,
+  isOpen: controlledOpen,
+  onOpenChange
+}: MediaPreviewProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setIsOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen
 
   if (!src) return null
 

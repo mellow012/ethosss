@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Image as ImageIcon, 
@@ -45,12 +46,21 @@ const categories = [
   { id: 'hotels', label: 'Eco Hotels', icon: ImageIcon },
 ]
 
-export default function MediaHub() {
+function MediaHubContent() {
   const [items, setItems] = useState<MediaItem[]>([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [activeType, setActiveType] = useState('all')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  useEffect(() => {
+    const id = searchParams.get('mediaId')
+    if (id) setSelectedId(id)
+  }, [searchParams])
 
   useEffect(() => {
     const fetchMedia = async () => {
@@ -237,6 +247,18 @@ export default function MediaHub() {
                         src={item.url} 
                         alt={item.title}
                         type={item.type}
+                        isOpen={selectedId === item.id}
+                        onOpenChange={(open) => {
+                          if (!open && selectedId === item.id) {
+                            setSelectedId(null);
+                            // Clear URL param without reloading
+                            const params = new URLSearchParams(window.location.search);
+                            params.delete('mediaId');
+                            router.replace(`/media-hub${params.toString() ? '?' + params.toString() : ''}`);
+                          } else if (open) {
+                            setSelectedId(item.id);
+                          }
+                        }}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
                       >
                         <div className="absolute inset-0 bg-forest/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center gap-3">
@@ -252,15 +274,16 @@ export default function MediaHub() {
                             variant="secondary" 
                             onClick={(e) => {
                               e.stopPropagation();
+                              const shareUrl = `${window.location.origin}/media-hub?mediaId=${item.id}`;
                               if (navigator.share) {
                                 navigator.share({
                                   title: item.title,
                                   text: item.description || '',
-                                  url: item.url,
+                                  url: shareUrl,
                                 }).catch(() => {});
                               } else {
-                                navigator.clipboard.writeText(item.url);
-                                toast.success('Link copied to clipboard');
+                                navigator.clipboard.writeText(shareUrl);
+                                toast.success('Share link copied to clipboard');
                               }
                             }}
                             className="rounded-full bg-white/90 shadow-xl scale-0 group-hover:scale-100 transition-transform duration-500 delay-150 hover:bg-forest hover:text-white"
@@ -315,5 +338,17 @@ export default function MediaHub() {
         )}
       </section>
     </div>
+  )
+}
+
+export default function MediaHub() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-10 w-10 animate-spin border-4 border-forest border-t-transparent rounded-full" />
+      </div>
+    }>
+      <MediaHubContent />
+    </Suspense>
   )
 }
