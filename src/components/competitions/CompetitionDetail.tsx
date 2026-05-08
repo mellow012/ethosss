@@ -249,20 +249,35 @@ export function CompetitionDetail({ id }: { id: string }) {
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
             {competition.title}
           </h1>
-          <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1 text-sunlight font-medium">
+          <div className="flex flex-wrap items-center gap-6 mt-6 text-sm">
+            <span className="flex items-center gap-1.5 text-gold font-black uppercase tracking-widest text-[10px]">
               <Trophy className="h-4 w-4" />
               {competition.prize}
             </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5" />
+            <span className="flex items-center gap-1.5 text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+              <Calendar className="h-3.5 w-3.5 text-forest" />
               {format(new Date(competition.startDate), 'dd MMM yyyy')} -{' '}
               {format(new Date(competition.endDate), 'dd MMM yyyy')}
             </span>
-            <span className="flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" />
-              {competition._count.entries} entries
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                <Users className="h-3.5 w-3.5 text-forest" />
+                {competition._count.entries} entries
+              </span>
+              {isActive && (
+                <Button
+                  onClick={() => {
+                    const el = document.getElementById('entry-form');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  size="sm"
+                  className="bg-forest hover:bg-forest-dark text-white rounded-full px-4 h-7 text-[9px] font-black uppercase tracking-widest shadow-lg shadow-forest/20 ml-2"
+                >
+                  <Send className="mr-1.5 h-3 w-3" />
+                  Enter Now
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Recap / Results Section */}
@@ -319,7 +334,7 @@ export function CompetitionDetail({ id }: { id: string }) {
         {/* Entry Form */}
         {isActive ? (
           session ? (
-            <Card className="mb-10">
+            <Card id="entry-form" className="mb-10 scroll-mt-24 border-2 border-forest/20 shadow-2xl shadow-forest/5 rounded-[2.5rem] overflow-hidden">
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                   <Send className="h-5 w-5 text-forest" />

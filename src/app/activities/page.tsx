@@ -9,18 +9,18 @@ export const metadata: Metadata = {
 
 export default function ActivitiesPage() {
   return (
-    <main className="min-h-screen pt-20 pb-20">
+    <main className="min-h-screen pt-16 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header Section */}
-        <div className="mb-12 text-center">
-          <Badge className="mb-4 bg-forest/10 text-forest hover:bg-forest/20 border-none px-4 py-1 text-sm font-semibold">
-            Get Involved
+        {/* Compact Header Section */}
+        <div className="mb-10 text-center">
+          <Badge className="mb-3 bg-forest/10 text-forest border-forest/20 px-3 py-0.5 text-[10px] font-black uppercase tracking-widest">
+            Activities Hub
           </Badge>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground tracking-tight mb-4">
-            Challenges & <span className="text-gradient-forest">Events</span>
+          <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter mb-3">
+            Challenges & <span className="text-forest">Events</span>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Discover active competitions, join community-driven activities, and track our environmental impact together.
+          <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            Discover active competitions and community events driving impact.
           </p>
         </div>
 
