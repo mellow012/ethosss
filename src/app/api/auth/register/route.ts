@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
+import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,10 +40,13 @@ export async function POST(request: NextRequest) {
     const { data: user, error } = await supabaseAdmin
       .from('User')
       .insert({
+        id: uuidv4(),
         email,
         name: name || null,
         password: hashedPassword,
         role: 'user',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select('id, email, name, role, createdAt')
       .single()

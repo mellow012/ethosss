@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get("eventId");
+    const all = searchParams.get("all") === "true";
+    const isAdmin = (session.user as any).role === "admin";
 
     if (eventId) {
       const { data, error } = await supabaseAdmin
@@ -25,15 +27,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ registered: !!data });
     }
 
-    // Return all bookings for the user
-    const { data, error } = await supabaseAdmin
+    // Admin can fetch all registrations
+    let query = supabaseAdmin
       .from('EventRegistration')
       .select(`
         *,
-        Event (*)
-      `)
-      .eq('userId', (session.user as any).id)
-      .order('createdAt', { ascending: false });
+        event:Event(*),
+        user:User(id, name, email, image)
+      `);
+
+    if (!all || !isAdmin) {
+      query = query.eq('userId', (session.user as any).id);
+    }
+
+    const { data, error } = await query.order('createdAt', { ascending: false });
 
     if (error) throw error;
 
@@ -50,7 +57,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { eventId } = await request.json();
+    const { eventId, fullName, email, phone, notes } = await request.json();
 
     if (!eventId) {
       return NextResponse.json({ error: "Event ID is required" }, { status: 400 });
@@ -74,6 +81,10 @@ export async function POST(request: NextRequest) {
         id: uuidv4(),
         eventId,
         userId: (session.user as any).id,
+        fullName,
+        email,
+        phone,
+        notes,
         status: 'registered',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Upsert: if email already exists and is inactive, reactivate it
     const { data: newsletter, error } = await supabaseAdmin
       .from('Newsletter')
-      .upsert({ email, active: true, updatedAt: new Date().toISOString() }, { onConflict: 'email' })
+      .upsert({ id: uuidv4(), email, active: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, { onConflict: 'email' })
       .select()
       .single();
 

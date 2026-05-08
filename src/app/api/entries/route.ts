@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
     const isAdmin = (session?.user as any)?.role === "admin";
     const currentUserId = (session?.user as any)?.id;
 
-    if (!competitionId && !isAdmin) {
+    if (!competitionId && !userId && !isAdmin) {
       return NextResponse.json(
-        { error: "competitionId is required" },
+        { error: "competitionId or userId is required" },
         { status: 400 }
       );
     }
@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
       .from('CompetitionEntry')
       .select(`
         *,
-        user:User(id, name, email, image)
+        user:User(id, name, email, image),
+        competition:Competition(id, title, prize)
       `);
 
     if (competitionId) {

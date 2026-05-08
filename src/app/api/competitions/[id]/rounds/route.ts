@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 // GET all rounds for a competition
 export async function GET(
@@ -58,6 +59,7 @@ export async function POST(
     const { data: round, error: createError } = await supabaseAdmin
       .from('CompetitionRound')
       .insert({
+        id: uuidv4(),
         competitionId: id,
         roundNumber: nextRoundNumber,
         title: title || `Round ${nextRoundNumber}`,

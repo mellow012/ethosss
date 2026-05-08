@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
+import { Toaster as SonnerToaster } from 'sonner'
 import { AuthProvider } from '@/providers/AuthProvider'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 import { Navbar } from '@/components/layout/Navbar'
@@ -76,6 +77,7 @@ export default function RootLayout({
               <Footer />
             </div>
             <Toaster />
+            <SonnerToaster position="top-center" richColors />
           </AuthProvider>
         </ThemeProvider>
       </body>

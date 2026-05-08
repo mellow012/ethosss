@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET(request: NextRequest) {
   try {
@@ -75,10 +76,12 @@ export async function POST(request: NextRequest) {
     const { data: review, error } = await supabaseAdmin
       .from('HotelReview')
       .insert({
+        id: uuidv4(),
         rating,
         content,
         authorName,
         hotelId,
+        createdAt: new Date().toISOString(),
       })
       .select()
       .single();

@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 
 export function SignupForm() {
   const { theme } = useTheme()
@@ -22,6 +24,7 @@ export function SignupForm() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -31,17 +34,23 @@ export function SignupForm() {
     e.preventDefault()
 
     if (!name.trim() || !email || !password) {
-      toast.error('All fields are required')
+      const msg = 'All fields are required'
+      setError(msg)
+      toast.error(msg)
       return
     }
 
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters')
+      const msg = 'Password must be at least 6 characters'
+      setError(msg)
+      toast.error(msg)
       return
     }
 
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match')
+      const msg = 'Passwords do not match'
+      setError(msg)
+      toast.error(msg)
       return
     }
 
@@ -60,7 +69,9 @@ export function SignupForm() {
 
       if (!res.ok) {
         const data = await res.json()
-        toast.error(data.error || 'Registration failed')
+        const msg = data.error || 'Registration failed'
+        setError(msg)
+        toast.error(msg)
         return
       }
 
@@ -114,6 +125,12 @@ export function SignupForm() {
             <h2 className="text-2xl font-bold text-center">Create Account</h2>
           </CardHeader>
           <CardContent className="p-6 pt-4">
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>

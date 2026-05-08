@@ -134,7 +134,7 @@ export function UpcomingEvents() {
           </div>
           <Button
             variant="outline"
-            onClick={() => router.push('/events')}
+            onClick={() => router.push('/activities?filter=events')}
             className="shrink-0 group"
           >
             View Calendar

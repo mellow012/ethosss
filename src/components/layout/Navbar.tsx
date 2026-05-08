@@ -40,6 +40,7 @@ const navLinks: { label: string; href: string }[] = [
   { label: 'Activities', href: '/activities' },
   { label: 'Hotels', href: '/hotels' },
   { label: 'Eco-Business', href: '/eco-business' },
+  { label: 'Media Hub', href: '/media-hub' },
 ]
 
 export function Navbar() {

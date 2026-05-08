@@ -22,20 +22,20 @@ export default function EcoBusinessPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-2 bg-sunlight/20 text-sunlight px-4 py-2 rounded-full text-sm font-bold tracking-wider uppercase mb-8">
-              <Rocket className="h-4 w-4" />
-              Green Innovation Hub
-            </div>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-8">
-              Eco-Business <br />
-              <span className="text-sunlight">Capital Boost</span>
-            </h1>
+              <div className="inline-flex items-center gap-2 bg-gold/20 text-gold px-4 py-2 rounded-full text-sm font-bold tracking-wider uppercase mb-8">
+                <Rocket className="h-4 w-4" />
+                Green Innovation Hub
+              </div>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight mb-8">
+                Eco-Business <br />
+                <span className="text-gold">Capital Boost</span>
+              </h1>
             <p className="text-white/70 text-lg md:text-xl leading-relaxed mb-12 max-w-3xl mx-auto">
               We are on a mission to fuel the green economy by providing youth-led eco-businesses with the
               strategic capital, expert mentorship, and regional networks they need to scale impact.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Button size="lg" className="bg-sunlight hover:bg-gold text-bark font-bold h-16 px-10 rounded-2xl group text-lg">
+              <Button size="lg" className="bg-gold hover:bg-gold-dark text-bark font-bold h-16 px-10 rounded-2xl group text-lg">
                 Apply for Funding
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -118,31 +118,31 @@ export default function EcoBusinessPage() {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="h-10 w-10 bg-sunlight/20 rounded-full flex items-center justify-center text-sunlight">
+                  <div className="h-10 w-10 bg-gold/20 rounded-full flex items-center justify-center text-gold">
                     <Leaf className="h-5 w-5" />
                   </div>
                   <span className="font-medium">100% Goes to Projects</span>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="h-10 w-10 bg-sunlight/20 rounded-full flex items-center justify-center text-sunlight">
+                  <div className="h-10 w-10 bg-gold/20 rounded-full flex items-center justify-center text-gold">
                     <Users className="h-5 w-5" />
                   </div>
                   <span className="font-medium">Empowers Local Youth</span>
                 </div>
               </div>
-              <Button size="lg" className="bg-sunlight hover:bg-gold text-bark font-bold h-14 px-10 rounded-2xl w-full sm:w-auto">
+              <Button size="lg" className="bg-gold hover:bg-gold-dark text-bark font-bold h-14 px-10 rounded-2xl w-full sm:w-auto">
                 Make a Contribution
               </Button>
             </div>
             <div className="lg:w-1/3 flex justify-center">
               <div className="relative">
-                <div className="absolute inset-0 bg-sunlight/20 blur-[80px] rounded-full" />
+                <div className="absolute inset-0 bg-gold/20 blur-[80px] rounded-full" />
                 <motion.div
                   animate={{ y: [0, -20, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                   className="bg-white/10 backdrop-blur-md border border-white/20 rounded-[2.5rem] p-10 relative z-10"
                 >
-                  <HandCoins className="h-32 w-32 text-sunlight" />
+                  <HandCoins className="h-32 w-32 text-gold" />
                 </motion.div>
               </div>
             </div>

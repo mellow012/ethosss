@@ -25,6 +25,7 @@ import { toast } from 'sonner'
 import Image from 'next/image'
 import { ImagePreview } from '@/components/ui/image-preview'
 import { useSession } from 'next-auth/react'
+import { ShareButtons } from '../blog/ShareButtons'
 
 interface Event {
   id: string
@@ -39,6 +40,8 @@ interface Event {
   competitionId: string | null
 }
 
+import { EventBookingDialog } from './EventBookingDialog'
+
 export function EventDetail({ id }: { id: string }) {
   const router = useRouter()
   const { data: session } = useSession()
@@ -46,6 +49,7 @@ export function EventDetail({ id }: { id: string }) {
   const [loading, setLoading] = useState(true)
   const [isRegistered, setIsRegistered] = useState(false)
   const [bookingLoading, setBookingLoading] = useState(false)
+  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -80,25 +84,30 @@ export function EventDetail({ id }: { id: string }) {
       return
     }
 
-    setBookingLoading(true)
-    try {
-      const res = await fetch('/api/events/register', {
-        method: isRegistered ? 'DELETE' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId: id }),
-      })
+    if (isRegistered) {
+      // Allow cancelling directly
+      setBookingLoading(true)
+      try {
+        const res = await fetch('/api/events/register', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId: id }),
+        })
 
-      if (res.ok) {
-        setIsRegistered(!isRegistered)
-        toast.success(isRegistered ? 'Booking cancelled' : 'Spot booked successfully!')
-      } else {
-        const data = await res.json()
-        toast.error(data.error || 'Action failed')
+        if (res.ok) {
+          setIsRegistered(false)
+          toast.success('Booking cancelled')
+        } else {
+          const data = await res.json()
+          toast.error(data.error || 'Action failed')
+        }
+      } catch (err) {
+        toast.error('Something went wrong')
+      } finally {
+        setBookingLoading(false)
       }
-    } catch (err) {
-      toast.error('Something went wrong')
-    } finally {
-      setBookingLoading(false)
+    } else {
+      setIsBookingDialogOpen(true)
     }
   }
 
@@ -141,6 +150,7 @@ export function EventDetail({ id }: { id: string }) {
   const eventDate = new Date(event.date)
   const isPast = isBefore(eventDate, new Date(now.getTime() - 6 * 60 * 60 * 1000))
   const isUpcoming = isAfter(eventDate, now)
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
 
   return (
     <motion.div
@@ -280,10 +290,10 @@ export function EventDetail({ id }: { id: string }) {
                   </Button>
                 )}
                 
-                <Button variant="outline" className="w-full py-6 border-forest/20 text-muted-foreground hover:text-forest">
-                  <Share2 className="mr-2 h-4 w-4" />
-                  Share Event
-                </Button>
+                <div className="pt-4 border-t border-border/50">
+                  <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">Share Event</p>
+                  <ShareButtons url={shareUrl} title={event.title} />
+                </div>
               </CardContent>
             </Card>
 
@@ -296,6 +306,16 @@ export function EventDetail({ id }: { id: string }) {
           </div>
         </div>
       </article>
+
+      <EventBookingDialog
+        isOpen={isBookingDialogOpen}
+        onClose={() => setIsBookingDialogOpen(false)}
+        eventId={event.id}
+        eventTitle={event.title}
+        userName={session?.user?.name || ''}
+        userEmail={session?.user?.email || ''}
+        onSuccess={() => setIsRegistered(true)}
+      />
     </motion.div>
   )
 }

@@ -60,6 +60,8 @@ interface Entry {
 
 import { useRouter } from 'next/navigation'
 
+import { ShareButtons } from '../blog/ShareButtons'
+
 export function CompetitionDetail({ id }: { id: string }) {
   const router = useRouter()
   const { data: session } = useSession()
@@ -176,6 +178,7 @@ export function CompetitionDetail({ id }: { id: string }) {
 
   const status = getStatus(competition)
   const isActive = status === 'active'
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
 
   return (
     <motion.div
@@ -186,21 +189,24 @@ export function CompetitionDetail({ id }: { id: string }) {
       className="min-h-screen"
     >
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/activities')}
-          className="mb-6 -ml-2"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Activities
-        </Button>
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/activities')}
+            className="-ml-2"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Activities
+          </Button>
+          <ShareButtons url={shareUrl} title={competition.title} />
+        </div>
 
         {/* Cover Image */}
         {competition.coverImage && (
           <ImagePreview 
             src={competition.coverImage} 
             alt={competition.title} 
-            className="w-full h-64 sm:h-80 rounded-xl overflow-hidden mb-8"
+            className="w-full h-64 sm:h-80 rounded-xl overflow-hidden mb-8 shadow-lg"
           />
         )}
 

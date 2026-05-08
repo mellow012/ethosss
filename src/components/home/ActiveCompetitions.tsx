@@ -127,9 +127,9 @@ export function ActiveCompetitions() {
               const EntryIcon = entryTypeIcons[comp.entryType] || FileText
               const statusColor =
                 status === 'active'
-                  ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                  ? 'bg-green-600 text-white border-none'
                   : status === 'upcoming'
-                  ? 'bg-sunlight/10 text-earth dark:text-sunlight'
+                  ? 'bg-gold text-forest-dark border-none'
                   : 'bg-muted text-muted-foreground'
               const statusLabel =
                 status === 'active'
@@ -159,10 +159,12 @@ export function ActiveCompetitions() {
                           <Trophy className="h-12 w-12 text-white/30" />
                         </div>
                       )}
-                      <div className="absolute top-3 left-3 flex gap-2">
-                        <Badge className={statusColor}>{statusLabel}</Badge>
-                        <Badge className={entryTypeColors[comp.entryType] || 'bg-muted'}>
-                          <EntryIcon className="h-3 w-3 mr-1" />
+                      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
+                        <Badge className={`${statusColor} font-black shadow-xl uppercase tracking-wider px-3 py-1 text-[10px]`}>
+                          {statusLabel}
+                        </Badge>
+                        <Badge className="bg-white/90 backdrop-blur-md text-forest font-black shadow-lg border-none px-3 py-1 uppercase text-[10px]">
+                          <EntryIcon className="h-3 w-3 mr-1 text-forest" />
                           {comp.entryType}
                         </Badge>
                       </div>

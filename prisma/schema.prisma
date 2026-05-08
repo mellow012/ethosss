@@ -239,14 +239,43 @@ model ImpactStat {
 }
 
 model Event {
-  id          String   @id @default(cuid())
+  id          String              @id @default(cuid())
   title       String
   description String
   date        DateTime
   location    String
   image       String?
   link        String?
-  isActive    Boolean  @default(true)
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  bookings    EventRegistration[]
+}
+
+model EventRegistration {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  fullName  String
+  email     String
+  phone     String?
+  notes     String?
+  status    String   @default("registered")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+model Media {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  url         String
+  type        String   @default("image") // 'image', 'video'
+  category    String?  // 'events', 'conservation', 'community', 'hotels'
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -266,8 +295,32 @@ model PlantingSite {
   image        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
+
   @@index([region])
+}
+
+model PostReaction {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  type      String   @default("like")
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, type])
+}
+
+model SuccessStoryReaction {
+  id             String   @id @default(cuid())
+  successStoryId String
+  userId         String
+  type           String   @default("like")
+  createdAt      DateTime @default(now())
+  successStory   SuccessStory @relation(fields: [successStoryId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([successStoryId, userId, type])
 }
 
 model SiteSetting {
@@ -277,7 +330,6 @@ model SiteSetting {
   description String?
   updatedAt   DateTime @updatedAt
 }
-
 
 model SuccessStory {
   id           String   @id @default(cuid())

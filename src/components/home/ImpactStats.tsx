@@ -25,7 +25,7 @@ const iconMap: Record<string, React.ElementType> = {
 
 const defaultStats: ImpactStat[] = [
   { id: '1', label: 'Trees Planted', value: '10000+', icon: 'tree', order: 0 },
-  { id: '2', label: 'Active Members', value: '5200', icon: 'users', order: 1 },
+  { id: '2', label: 'Active Members', value: '7', icon: 'users', order: 1 },
   { id: '3', label: 'UK Regions', value: '15', icon: 'globe', order: 2 },
   { id: '4', label: 'Eco Hotels', value: '42', icon: 'leaf', order: 3 },
   { id: '5', label: 'Competitions Won', value: '180', icon: 'award', order: 4 },

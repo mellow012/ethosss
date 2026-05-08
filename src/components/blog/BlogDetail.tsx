@@ -11,6 +11,8 @@ import {
   MessageCircle,
   Send,
   Clock,
+  Heart,
+  ThumbsUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -65,6 +67,9 @@ export function BlogDetail({ id }: { id: string }) {
   const [commentText, setCommentText] = useState('')
   const [loading, setLoading] = useState(true)
   const [submittingComment, setSubmittingComment] = useState(false)
+  const [likesCount, setLikesCount] = useState(0)
+  const [isLiked, setIsLiked] = useState(false)
+  const [liking, setLiking] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -72,17 +77,21 @@ export function BlogDetail({ id }: { id: string }) {
     
     const fetchPostData = async () => {
       try {
-        const [postsRes, commentsRes] = await Promise.all([
+        const [postsRes, commentsRes, reactionRes] = await Promise.all([
           fetch(`/api/posts?limit=100`),
           fetch(`/api/comments?postId=${id}`),
+          fetch(`/api/posts/${id}/react`),
         ])
         const postsData = await postsRes.json()
         const commentsData = await commentsRes.json()
+        const reactionData = await reactionRes.json()
         
         const found = (postsData.posts || []).find((p: Post) => p.id === id)
         if (found) {
           setPost(found)
           setComments(commentsData.comments || [])
+          setLikesCount(reactionData.likesCount || 0)
+          setIsLiked(reactionData.isLiked || false)
           
           if (found.category) {
             const relatedRes = await fetch(`/api/posts?categoryId=${found.category.id}&limit=4`)
@@ -100,16 +109,35 @@ export function BlogDetail({ id }: { id: string }) {
     fetchPostData()
   }, [id])
 
-  const calculateReadingTime = (content: string) => {
-    const wordsPerMinute = 200
-    const words = content.trim().split(/\s+/).length
-    return Math.ceil(words / wordsPerMinute)
-  }
+  const handleLike = async () => {
+    if (!session) {
+      toast.error('Please log in to like posts')
+      router.push('/login')
+      return
+    }
 
-  const getYouTubeId = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
-    const match = url.match(regExp)
-    return (match && match[2].length === 11) ? match[2] : null
+    setLiking(true)
+    // Optimistic UI
+    const prevLiked = isLiked
+    const prevCount = likesCount
+    setIsLiked(!prevLiked)
+    setLikesCount(prevCount + (prevLiked ? -1 : 1))
+
+    try {
+      const res = await fetch(`/api/posts/${id}/react`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'like' }),
+      })
+      if (!res.ok) throw new Error()
+    } catch {
+      // Revert on error
+      setIsLiked(prevLiked)
+      setLikesCount(prevCount)
+      toast.error('Failed to update reaction')
+    } finally {
+      setLiking(false)
+    }
   }
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -126,13 +154,22 @@ export function BlogDetail({ id }: { id: string }) {
           postId: id,
         }),
       })
+      const data = await res.json()
       if (res.ok) {
-        toast.success(
-          'Comment submitted! It will appear after being approved.'
-        )
+        toast.success('Comment posted!')
+        // Add new comment to state immediately
+        const newComment: Comment = {
+          ...data.comment,
+          author: {
+            id: session.user.id,
+            name: session.user.name,
+            email: session.user.email,
+            image: session.user.image,
+          }
+        }
+        setComments([newComment, ...comments])
         setCommentText('')
       } else {
-        const data = await res.json()
         toast.error(data.error || 'Failed to submit comment')
       }
     } catch {
@@ -140,6 +177,18 @@ export function BlogDetail({ id }: { id: string }) {
     } finally {
       setSubmittingComment(false)
     }
+  }
+
+  const calculateReadingTime = (content: string) => {
+    const wordsPerMinute = 200
+    const words = content.trim().split(/\s+/).length
+    return Math.ceil(words / wordsPerMinute)
+  }
+
+  const getYouTubeId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
+    const match = url.match(regExp)
+    return (match && match[2].length === 11) ? match[2] : null
   }
 
   if (loading) {
@@ -373,7 +422,21 @@ export function BlogDetail({ id }: { id: string }) {
             <h2 className="text-2xl font-bold text-foreground">
               Comments ({comments.length})
             </h2>
-            <MessageCircle className="h-6 w-6 text-forest" />
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLike}
+                disabled={liking}
+                className={`flex items-center gap-2 rounded-full px-4 ${
+                  isLiked ? 'text-rose-500 bg-rose-50' : 'text-muted-foreground'
+                }`}
+              >
+                <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
+                <span className="font-bold">{likesCount}</span>
+              </Button>
+              <MessageCircle className="h-6 w-6 text-forest" />
+            </div>
           </div>
 
           {/* Comment Form */}

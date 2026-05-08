@@ -32,6 +32,10 @@ import {
   Leaf,
   Menu,
   Target,
+  User,
+  Mail,
+  Phone,
+  Image as ImageIcon,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -91,6 +95,7 @@ import { AddHotelDialog } from './AddHotelDialog'
 import { AddCompetitionDialog } from './AddCompetitionDialog'
 import { AddContentDialog } from './AddPostDialog'
 import { AddSuccessStoryDialog } from './AddSuccessStoryDialog'
+import { AddMediaDialog } from './AddMediaDialog'
 import { SettingsTab } from './SettingsTab'
 
 
@@ -132,7 +137,7 @@ interface Entry {
   content: string
   status: string
   submittedAt: string
-  user: { name: string }
+  user: { name: string; email?: string; image?: string | null }
   competition: { title: string }
 }
 
@@ -155,6 +160,16 @@ interface SuccessStory {
   impact: string
   description: string
   featured: boolean
+  createdAt: string
+}
+
+interface MediaItem {
+  id: string
+  title: string
+  url: string
+  type: string
+  category: string | null
+  description: string | null
   createdAt: string
 }
 
@@ -200,9 +215,11 @@ export function AdminDashboard() {
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [entries, setEntries] = useState<Entry[]>([])
+  const [eventRegistrations, setEventRegistrations] = useState<any[]>([])
   const [users, setUsers] = useState<UserItem[]>([])
   const [sites, setSites] = useState<PlantingSite[]>([])
   const [stories, setStories] = useState<SuccessStory[]>([])
+  const [media, setMedia] = useState<MediaItem[]>([])
   const [analytics, setAnalytics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -244,7 +261,7 @@ export function AdminDashboard() {
         return res.ok ? res.json() : { error: true };
       };
 
-      const [postsData, eventsData, hotelsData, compsData, usersData, sitesData, entriesData, storiesData, analyticsData] = await Promise.all([
+      const [postsData, eventsData, hotelsData, compsData, usersData, sitesData, entriesData, eventRegistrationsData, storiesData, mediaData, analyticsData] = await Promise.all([
         fetchJson('/api/posts?all=true&limit=100'),
         fetchJson('/api/events?all=true&limit=100'),
         fetchJson('/api/hotels?limit=100'),
@@ -252,7 +269,9 @@ export function AdminDashboard() {
         fetchJson('/api/users?limit=100'),
         fetchJson('/api/planting-sites'),
         fetchJson('/api/entries?limit=500'), // Fetch all entries once
+        fetchJson('/api/events/register?all=true'),
         fetchJson('/api/success-stories?limit=100'),
+        fetchJson('/api/media?limit=100'),
         fetchJson('/api/admin/analytics')
       ])
 
@@ -263,6 +282,8 @@ export function AdminDashboard() {
       setUsers(usersData.users || [])
       setSites(sitesData.sites || [])
       setStories(storiesData.stories || [])
+      setMedia(mediaData.media || [])
+      setEventRegistrations(eventRegistrationsData.bookings || [])
       setAnalytics(analyticsData.error ? null : analyticsData)
 
       // Optimized: Map competition names to entries locally instead of re-fetching per competition
@@ -297,6 +318,7 @@ export function AdminDashboard() {
         competition: '/api/competitions',
         site: '/api/planting-sites',
         success_story: '/api/success-stories',
+        media: '/api/media',
       }
 
       const endpoint = endpoints[deleteType]
@@ -447,6 +469,7 @@ export function AdminDashboard() {
           { id: 'users', label: 'Users', icon: Users },
           { id: 'sites', label: 'Planting Sites', icon: TreePine },
           { id: 'stories', label: 'Success Stories', icon: Target },
+          { id: 'media', label: 'Media Hub', icon: ImageIcon },
           { id: 'settings', label: 'Global Settings', icon: Settings },
         ].map((item) => (
           <button
@@ -578,6 +601,9 @@ export function AdminDashboard() {
                 onOpenChange={setStoryEditOpen}
               />
             )}
+            {activeTab === 'media' && (
+              <AddMediaDialog onSuccess={fetchData} />
+            )}
           </div>
         </header>
 
@@ -594,7 +620,7 @@ export function AdminDashboard() {
                   {[
                     { label: 'Blog Posts', value: posts.length, icon: FileText, color: 'text-forest', bg: 'bg-forest/10', trend: '+12%', sub: 'this month' },
                     { label: 'Eco-Hotels', value: hotels.length, icon: Building2, color: 'text-moss', bg: 'bg-moss/10', trend: '+2', sub: 'new partners' },
-                    { label: 'Total Entries', value: entries.length, icon: Edit, color: 'text-sunlight', bg: 'bg-sunlight/10', trend: '+45', sub: 'submissions' },
+                    { label: 'Total Entries', value: entries.length + eventRegistrations.length, icon: Edit, color: 'text-sunlight', bg: 'bg-sunlight/10', trend: '+45', sub: 'submissions' },
                     { label: 'Community Users', value: users.length, icon: Users, color: 'text-bark', bg: 'bg-bark/10', trend: '+128', sub: 'members' },
                   ].map((stat) => (
                     <Card key={stat.label} className="border-none shadow-sm bg-card hover:shadow-md transition-all group overflow-hidden relative">
@@ -979,60 +1005,131 @@ export function AdminDashboard() {
                 </div>
               </TabsContent>
 
-              {/* Entries Tab */}
-              <TabsContent value="entries" className="space-y-6 mt-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {loading ? (
-                    Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl" />)
-                  ) : (
-                    entries
-                      .filter(entry => fuzzyMatch(entry.user.name, searchQuery) || fuzzyMatch(entry.competition.title, searchQuery))
-                      .map((entry) => (
-                      <Card key={entry.id} className="border-none shadow-sm hover:shadow-md transition-all overflow-hidden">
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between gap-4 mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-bark">
-                                {entry.user.name.charAt(0)}
+              <TabsContent value="entries" className="space-y-8 mt-0">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold">Competition Entries</h3>
+                    <Badge variant="outline">{entries.length} Submissions</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {loading ? (
+                      Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl" />)
+                    ) : entries.length === 0 ? (
+                      <p className="text-muted-foreground col-span-full py-8 text-center bg-muted/20 rounded-2xl border border-dashed border-border">No competition entries yet.</p>
+                    ) : (
+                      entries
+                        .filter(entry => fuzzyMatch(entry.user.name, searchQuery) || fuzzyMatch(entry.competition.title, searchQuery))
+                        .map((entry) => (
+                        <Card key={entry.id} className="border-none shadow-sm hover:shadow-md transition-all overflow-hidden">
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between gap-4 mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-bark overflow-hidden">
+                                  {entry.user.image ? <img src={entry.user.image} className="w-full h-full object-cover" /> : entry.user.name.charAt(0)}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-sm leading-tight">{entry.user.name}</h4>
+                                  <p className="text-[10px] text-muted-foreground">In {entry.competition.title}</p>
+                                </div>
                               </div>
-                              <div>
-                                <h4 className="font-bold text-sm leading-tight">{entry.user.name}</h4>
-                                <p className="text-[10px] text-muted-foreground">In {entry.competition.title}</p>
-                              </div>
+                              <Badge variant="secondary" className={`text-[10px] ${statusColors[entry.status]}`}>
+                                {entry.status}
+                              </Badge>
                             </div>
-                            <Badge variant="secondary" className={`text-[10px] ${statusColors[entry.status]}`}>
-                              {entry.status}
-                            </Badge>
-                          </div>
-                          <div className="bg-muted/50 p-4 rounded-xl text-sm italic text-muted-foreground mb-6 line-clamp-3 relative">
-                            &ldquo;{entry.content}&rdquo;
-                          </div>
-                          <div className="flex items-center justify-between gap-2 border-t border-border/50 pt-4">
-                             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                               <Calendar className="h-3 w-3" /> {format(new Date(entry.submittedAt), 'MMM d, yyyy')}
-                             </span>
-                             <div className="flex gap-2">
-                               {entry.status !== 'approved' && (
+                            <div className="bg-muted/50 p-4 rounded-xl text-sm italic text-muted-foreground mb-6 line-clamp-3 relative">
+                              &ldquo;{entry.content}&rdquo;
+                            </div>
+                            <div className="flex items-center justify-between gap-2 border-t border-border/50 pt-4">
+                               <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                 <Calendar className="h-3 w-3" /> {format(new Date(entry.submittedAt), 'MMM d, yyyy')}
+                               </span>
+                               <div className="flex gap-2">
                                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-green-600 hover:bg-green-50" onClick={() => { setReviewEntry(entry); setReviewStatus('approved'); setReviewDialogOpen(true); }}>
                                    <CheckCircle2 className="h-4 w-4" />
                                  </Button>
-                               )}
-                               {entry.status !== 'rejected' && (
                                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-600 hover:bg-red-50" onClick={() => { setReviewEntry(entry); setReviewStatus('rejected'); setReviewDialogOpen(true); }}>
                                    <XCircle className="h-4 w-4" />
                                  </Button>
-                               )}
-                               {entry.status !== 'winner' && (
                                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-sunlight hover:bg-sunlight/10" onClick={() => { setReviewEntry(entry); setReviewStatus('winner'); setReviewDialogOpen(true); }}>
                                    <Award className="h-4 w-4" />
                                  </Button>
-                               )}
-                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
+                               </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold">Event Registrations</h3>
+                    <Badge variant="outline">{eventRegistrations.length} Bookings</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {loading ? (
+                      Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)
+                    ) : eventRegistrations.length === 0 ? (
+                      <p className="text-muted-foreground col-span-full py-8 text-center bg-muted/20 rounded-2xl border border-dashed border-border">No event registrations yet.</p>
+                    ) : (
+                      eventRegistrations
+                        .filter(reg => fuzzyMatch(reg.user?.name, searchQuery) || fuzzyMatch(reg.event?.title, searchQuery))
+                        .map((reg) => (
+                        <Card key={reg.id} className="border-none shadow-sm hover:shadow-md transition-all">
+                          <CardContent className="p-5">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-8 h-8 rounded-full bg-forest/10 flex items-center justify-center font-bold text-forest text-xs overflow-hidden">
+                                {reg.user?.image ? <img src={reg.user.image} className="w-full h-full object-cover" /> : reg.user?.name?.charAt(0) || 'U'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-sm truncate">{reg.user?.name || 'Unknown User'}</h4>
+                                <p className="text-[10px] text-muted-foreground truncate">{reg.user?.email}</p>
+                              </div>
+                              <Badge className="bg-green-500/10 text-green-600 border-none text-[9px] h-5">BOOKED</Badge>
+                            </div>
+                            <div className="flex flex-col gap-3 mb-4">
+                              <div className="flex items-start gap-2 p-3 bg-muted/30 rounded-xl">
+                                <Calendar className="h-4 w-4 text-forest shrink-0 mt-0.5" />
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold truncate">{reg.event?.title || 'Unknown Event'}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                                    {reg.event?.date ? format(new Date(reg.event.date), 'MMM d, yyyy') : 'No date'}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 gap-2 pl-1">
+                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                  <User className="h-3 w-3 text-forest/60" />
+                                  <span className="font-bold text-foreground">{reg.fullName || reg.user?.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                  <Mail className="h-3 w-3 text-forest/60" />
+                                  <span>{reg.email || reg.user?.email}</span>
+                                </div>
+                                {reg.phone && (
+                                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                    <Phone className="h-3 w-3 text-forest/60" />
+                                    <span>{reg.phone}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {reg.notes && (
+                                <div className="p-3 bg-sunlight/5 rounded-xl border border-sunlight/10 text-[10px] text-muted-foreground leading-relaxed">
+                                  <span className="font-bold text-earth block mb-1">Notes:</span>
+                                  {reg.notes}
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
                 </div>
               </TabsContent>
 
@@ -1186,6 +1283,50 @@ export function AdminDashboard() {
                         </CardContent>
                       </Card>
                     ))
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Media Hub Tab */}
+              <TabsContent value="media" className="space-y-6 mt-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {loading ? (
+                    Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="aspect-square w-full rounded-2xl" />)
+                  ) : (
+                    media
+                      .filter(m => fuzzyMatch(m.title, searchQuery) || fuzzyMatch(m.description, searchQuery))
+                      .map((m) => (
+                        <Card key={m.id} className="border-none shadow-sm group overflow-hidden bg-card">
+                          <div className="aspect-square relative">
+                            <img 
+                              src={m.url} 
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                              alt={m.title}
+                            />
+                            <div className="absolute top-2 right-2">
+                              <Button 
+                                variant="destructive" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => { setDeleteType('media'); setDeleteId(m.id); setDeleteDialogOpen(true); }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <Badge className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-md border-none text-[8px] uppercase font-bold">
+                              {m.type}
+                            </Badge>
+                          </div>
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <Badge variant="outline" className="text-[8px] border-forest/20 text-forest font-bold uppercase">
+                                {m.category}
+                              </Badge>
+                            </div>
+                            <h4 className="font-bold text-xs truncate">{m.title}</h4>
+                          </CardContent>
+                        </Card>
+                      ))
                   )}
                 </div>
               </TabsContent>

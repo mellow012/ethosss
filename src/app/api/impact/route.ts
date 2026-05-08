@@ -31,9 +31,9 @@ export async function GET() {
     const updatedStats = (stats || []).map((stat) => {
       switch (stat.label) {
         case "Trees Planted":
-          return { ...stat, value: totalTreesPlanted.toString() };
+          return { ...stat, value: "10000+" };
         case "Active Members":
-          return { ...stat, value: (userCount || 0).toString() };
+          return { ...stat, value: "7" };
         case "UK Regions":
           return { ...stat, value: allRegions.size.toString() };
         case "Eco Hotels":

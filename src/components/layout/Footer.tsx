@@ -23,8 +23,9 @@ import { toast } from 'sonner'
 const quickLinks = [
   { label: 'Home', href: '/' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Eco Hotels', href: '/hotels' },
+  { label: 'Hotels', href: '/hotels' },
   { label: 'Competitions', href: '/competitions' },
+  { label: 'Media Hub', href: '/media-hub' },
 ]
 
 const resourceLinks = [
@@ -145,13 +146,20 @@ export function Footer() {
                 </p>
               </div>
               <div className="flex gap-3 mt-5">
-                {[Instagram, Twitter, Facebook, Globe].map((Icon, i) => (
+                {[
+                  { Icon: Instagram, href: 'https://instagram.com/ethosss' },
+                  { Icon: Twitter, href: 'https://twitter.com/ethosss' },
+                  { Icon: Facebook, href: 'https://facebook.com/ethosss' },
+                  { Icon: Globe, href: 'https://ethosss.org' },
+                ].map((social, i) => (
                   <a
                     key={i}
-                    href="#"
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="h-9 w-9 rounded-full bg-forest/10 flex items-center justify-center hover:bg-forest hover:text-white text-forest transition-all duration-200"
                   >
-                    <Icon className="h-4 w-4" />
+                    <social.Icon className="h-4 w-4" />
                   </a>
                 ))}
               </div>
@@ -230,15 +238,15 @@ export function Footer() {
               the planet.
             </p>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-forest transition-colors">
+              <Link href="/privacy" className="hover:text-forest transition-colors">
                 Privacy Policy
-              </a>
-              <a href="#" className="hover:text-forest transition-colors">
+              </Link>
+              <Link href="/terms" className="hover:text-forest transition-colors">
                 Terms of Service
-              </a>
-              <a href="#" className="hover:text-forest transition-colors">
+              </Link>
+              <Link href="/cookies" className="hover:text-forest transition-colors">
                 Cookie Policy
-              </a>
+              </Link>
             </div>
           </div>
         </div>

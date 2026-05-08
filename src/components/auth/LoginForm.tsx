@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 
 export function LoginForm() {
   const { theme } = useTheme()
@@ -20,6 +22,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -41,10 +44,13 @@ export function LoginForm() {
       })
 
       if (result?.error) {
-        toast.error(result.error === 'CredentialsSignin'
+        const errorMsg = result.error === 'CredentialsSignin'
           ? 'Invalid email or password'
-          : result.error)
+          : result.error
+        setError(errorMsg)
+        toast.error(errorMsg)
       } else {
+        setError(null)
         toast.success('Welcome back!')
         router.push('/')
       }
@@ -83,6 +89,12 @@ export function LoginForm() {
             <h2 className="text-2xl font-bold text-center">Log in</h2>
           </CardHeader>
           <CardContent className="p-6 pt-4">
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -123,6 +135,15 @@ export function LoginForm() {
                     ) : (
                       <Eye className="h-4 w-4" />
                     )}
+                  </button>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/forgot-password')}
+                    className="text-xs text-forest hover:text-forest-dark font-medium"
+                  >
+                    Forgot password?
                   </button>
                 </div>
               </div>

@@ -2,12 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
     const featured = searchParams.get("featured");
     const limit = parseInt(searchParams.get("limit") || "10");
+
+    if (id) {
+      const { data: story, error } = await supabaseAdmin
+        .from('SuccessStory')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return NextResponse.json({ story });
+    }
 
     let query = supabaseAdmin
       .from('SuccessStory')
@@ -46,6 +59,7 @@ export async function POST(request: NextRequest) {
     const { data: story, error } = await supabaseAdmin
       .from('SuccessStory')
       .insert({
+        id: uuidv4(),
         title,
         businessName,
         category,
@@ -54,6 +68,8 @@ export async function POST(request: NextRequest) {
         image,
         content,
         featured: featured ?? false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select()
       .single();
