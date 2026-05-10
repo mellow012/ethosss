@@ -53,7 +53,7 @@ export function FeaturedHotels() {
               <span className="text-gradient-forest">Eco Hotels</span>
             </h2>
             <p className="mt-2 text-muted-foreground max-w-xl">
-              Discover hand-picked sustainable accommodations across Southern Africa
+              Discover hand-picked sustainable accommodations across Africa
             that prioritise environmental responsibility without compromising
             comfort.
             </p>

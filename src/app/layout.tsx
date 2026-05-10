@@ -27,12 +27,12 @@ const geistMono = { variable: "" }
 export const metadata: Metadata = {
   title: 'Ethosss | Empowering Innovation & Sustainable Travel',
   description:
-    'Ethosss is a social enterprise operating across Southern Africa, empowering people through the economy, eco-friendly tourism, and innovation. Join us in building a more inclusive future for Africa.',
+    'Ethosss is a social enterprise operating across Africa, empowering people through the economy, eco-friendly tourism, and innovation. Join us in building a more inclusive future for Africa.',
   keywords: [
     'Ethosss',
     'youth empowerment',
     'green economy',
-    'sustainable travel Southern Africa',
+    'sustainable travel Africa',
     'eco-tourism',
     'climate action',
     'reforestation',
@@ -46,14 +46,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Ethosss — Empowering Innovation',
     description:
-      'A social enterprise empowering people through the economy, eco-friendly tourism, and innovation across Southern Africa.',
+      'A social enterprise empowering people through the economy, eco-friendly tourism, and innovation across Africa.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Ethosss — Empowering Innovation',
     description:
-      'A social enterprise empowering people through the economy, eco-friendly tourism, and innovation across Southern Africa.',
+      'A social enterprise empowering people through the economy, eco-friendly tourism, and innovation across Africa.',
   },
 }
 

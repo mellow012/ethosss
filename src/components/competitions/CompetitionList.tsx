@@ -34,6 +34,8 @@ interface Competition {
   endDate: string
   isActive: boolean
   maxEntries: number | null
+  winnerName: string | null
+  location: string | null
   _count: { entries: number }
 }
 

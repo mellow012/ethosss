@@ -127,17 +127,16 @@ export function Footer() {
               </Link>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Empowering innovation and sustainable travel.
-                A social enterprise committed to the economy, eco-friendly tourism, and innovation across Southern
-                Africa.
+                A social enterprise committed to the economy, eco-friendly tourism, and innovation across Africa.
               </p>
               <div className="mt-4 space-y-2 text-sm text-muted-foreground">
                 <p className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-forest" />
-                  Blantyre, Malawi Branch
+                  Nairobi, Kenya Branch
                 </p>
                 <p className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-forest" />
-                  0883335839
+                  +254 712 345 678
                 </p>
                 <p className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-forest" />
@@ -219,7 +218,7 @@ export function Footer() {
               </p>
               <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 text-forest" />
-                <span>Operating across Southern Africa</span>
+                <span>Operating across Africa</span>
               </div>
             </div>
           </div>

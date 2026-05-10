@@ -72,7 +72,7 @@ const slides: Slide[] = [
     icon: Handshake,
     title: 'Regional Integration & Collaboration',
     description:
-      'We foster cross-border collaboration to strengthen innovation and unity across Southern Africa.',
+      'We foster cross-border collaboration to strengthen innovation and unity across Africa.',
     bullets: [
       'Platforms for youth to share ideas and solutions',
       'Support for regional green-economy investments',
@@ -177,8 +177,7 @@ export function WhatWeDoCarousel() {
           </h2>
           <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
             Our mission is to create opportunities that connect youth, build
-            capacity, and inspire sustainable development across Southern
-            Africa.
+            capacity, and inspire sustainable development across Africa.
           </p>
         </motion.div>
 

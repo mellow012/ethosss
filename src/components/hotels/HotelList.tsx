@@ -48,18 +48,16 @@ interface Hotel {
 
 const regions = [
   'All Regions',
-  'South East',
-  'South West',
-  'London',
-  'East of England',
-  'West Midlands',
-  'East Midlands',
-  'North West',
-  'North East',
-  'Yorkshire',
-  'Wales',
-  'Scotland',
-  'Northern Ireland',
+  'East Africa',
+  'West Africa',
+  'North Africa',
+  'Southern Africa',
+  'Central Africa',
+  'Nairobi',
+  'Mombasa',
+  'Maasai Mara',
+  'Serengeti',
+  'Kruger',
 ]
 
 export function HotelList() {
@@ -122,7 +120,7 @@ export function HotelList() {
               Eco-Friendly Hotels
             </h1>
             <p className="mt-3 text-primary-foreground/80 max-w-2xl mx-auto">
-              Discover verified sustainable accommodations across the UK that
+              Discover verified sustainable accommodations across Africa that
               prioritise environmental responsibility and your comfort.
             </p>
           </div>

@@ -46,11 +46,11 @@ export default function Home() {
         <WhatWeDoCarousel />
       </div>
       <ImpactStats />
+      <TreePlantingMap />
       <EcoBusinessSuccess />
       <UpcomingEvents />
       <LatestPosts />
       <ActiveCompetitions />
-      <TreePlantingMap />
       <FeaturedHotels />
       <Testimonials />
       <JoinMovement />

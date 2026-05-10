@@ -12,6 +12,7 @@ import {
   Camera,
   FileText,
   Clock,
+  MapPin,
   CheckCircle2,
   AlertCircle,
   Lock,
@@ -25,6 +26,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useSession } from 'next-auth/react'
 import { useAppStore } from '@/lib/store'
 import { format } from 'date-fns'
@@ -46,6 +54,7 @@ interface Competition {
   maxEntries: number | null
   recap: string | null
   winnerName: string | null
+  location: string | null
   _count: { entries: number }
 }
 
@@ -62,16 +71,31 @@ import { useRouter } from 'next/navigation'
 
 import { ShareButtons } from '../blog/ShareButtons'
 
+interface CompetitionEvent {
+  id: string
+  title: string
+  description: string
+  date: string
+  location: string
+  image: string | null
+  link: string | null
+  recap: string | null
+}
+
 export function CompetitionDetail({ id }: { id: string }) {
   const router = useRouter()
   const { data: session } = useSession()
   const [competition, setCompetition] = useState<Competition | null>(null)
   const [entries, setEntries] = useState<Entry[]>([])
+  const [linkedEvents, setLinkedEvents] = useState<CompetitionEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
   // Entry form
-  const [entryContent, setEntryContent] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [age, setAge] = useState('')
+  const [gender, setGender] = useState('')
   const [entryImageUrl, setEntryImageUrl] = useState('')
 
   useEffect(() => {
@@ -80,13 +104,15 @@ export function CompetitionDetail({ id }: { id: string }) {
     Promise.all([
       fetch(`/api/competitions?limit=100`).then((r) => r.json()),
       fetch(`/api/entries?competitionId=${id}`).then((r) => r.json()),
+      fetch(`/api/events?competitionId=${id}&all=true`).then((r) => r.json()),
     ])
-      .then(([compData, entryData]) => {
+      .then(([compData, entryData, eventData]) => {
         const found = (compData.competitions || []).find(
           (c: Competition) => c.id === id
         )
         setCompetition(found || null)
         setEntries(entryData.entries || [])
+        setLinkedEvents(eventData.events || [])
       })
       .catch(() => {
         toast.error('Failed to load competition')
@@ -105,26 +131,47 @@ export function CompetitionDetail({ id }: { id: string }) {
 
   const handleSubmitEntry = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!session || !entryContent.trim()) {
-      if (!session) toast.error('Please log in to enter')
+    if (!session || !fullName.trim() || !age || !gender) {
+      if (!session) toast.error('Please log in to register')
+      else toast.error('Please fill in all required fields')
       return
     }
 
     setSubmitting(true)
     try {
-      const res = await fetch('/api/entries', {
+      const registrationData = `Name: ${fullName || 'User'}, Age: ${age}, Gender: ${gender}, Phone: ${phone}`
+
+      // 1. Submit Competition Entry
+      const entryRes = await fetch('/api/entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           competitionId: id,
-          content: entryContent.trim(),
+          content: registrationData,
           imageUrl: entryImageUrl.trim() || null,
         }),
       })
 
-      if (res.ok) {
-        toast.success('Entry submitted! It will be reviewed shortly.')
-        setEntryContent('')
+      // 2. If there are linked events, register for the first one automatically
+      if (linkedEvents.length > 0) {
+        await fetch('/api/events/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eventId: linkedEvents[0].id,
+            fullName: fullName || session.user?.name || 'User',
+            phone: phone,
+            notes: registrationData,
+          }),
+        })
+      }
+
+      if (entryRes.ok) {
+        toast.success('Registration successful! You are now entered.')
+        setFullName('')
+        setPhone('')
+        setAge('')
+        setGender('')
         setEntryImageUrl('')
         // Refresh entries
         const entryData = await fetch(
@@ -132,13 +179,38 @@ export function CompetitionDetail({ id }: { id: string }) {
         ).then((r) => r.json())
         setEntries(entryData.entries || [])
       } else {
-        const data = await res.json()
+        const data = await entryRes.json()
         toast.error(data.error || 'Failed to submit entry')
       }
     } catch {
       toast.error('Something went wrong')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleRegisterEvent = async (eventId: string) => {
+    if (!session) {
+      toast.error('Please log in to register')
+      router.push('/login')
+      return
+    }
+
+    try {
+      const res = await fetch('/api/events/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId, fullName: session.user?.name || 'User' }),
+      })
+
+      if (res.ok) {
+        toast.success('Successfully registered for the event!')
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Failed to register')
+      }
+    } catch {
+      toast.error('Something went wrong')
     }
   }
 
@@ -177,6 +249,8 @@ export function CompetitionDetail({ id }: { id: string }) {
   }
 
   const status = getStatus(competition)
+  const isUpcoming = status === 'upcoming'
+  const isEnded = status === 'ended'
   const isActive = status === 'active'
   const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
 
@@ -203,9 +277,9 @@ export function CompetitionDetail({ id }: { id: string }) {
 
         {/* Cover Image */}
         {competition.coverImage && (
-          <ImagePreview 
-            src={competition.coverImage} 
-            alt={competition.title} 
+          <ImagePreview
+            src={competition.coverImage}
+            alt={competition.title}
             className="w-full h-64 sm:h-80 rounded-xl overflow-hidden mb-8 shadow-lg"
           />
         )}
@@ -218,23 +292,23 @@ export function CompetitionDetail({ id }: { id: string }) {
                 status === 'active'
                   ? 'bg-green-500/10 text-green-600 dark:text-green-400'
                   : status === 'upcoming'
-                  ? 'bg-sunlight/10 text-earth dark:text-sunlight'
-                  : 'bg-muted text-muted-foreground'
+                    ? 'bg-sunlight/10 text-earth dark:text-sunlight'
+                    : 'bg-muted text-muted-foreground'
               }
             >
               {status === 'active'
                 ? 'Open Now'
                 : status === 'upcoming'
-                ? 'Coming Soon'
-                : 'Ended'}
+                  ? 'Coming Soon'
+                  : 'Ended'}
             </Badge>
             <Badge
               className={
                 competition.entryType === 'photo'
                   ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                   : competition.entryType === 'story'
-                  ? 'bg-forest/10 text-forest dark:text-forest-light'
-                  : 'bg-sunlight/10 text-earth dark:text-sunlight'
+                    ? 'bg-forest/10 text-forest dark:text-forest-light'
+                    : 'bg-sunlight/10 text-earth dark:text-sunlight'
               }
             >
               {competition.entryType === 'photo' && (
@@ -249,36 +323,41 @@ export function CompetitionDetail({ id }: { id: string }) {
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
             {competition.title}
           </h1>
-          <div className="flex flex-wrap items-center gap-6 mt-6 text-sm">
-            <span className="flex items-center gap-1.5 text-gold font-black uppercase tracking-widest text-[10px]">
-              <Trophy className="h-4 w-4" />
-              {competition.prize}
-            </span>
-            <span className="flex items-center gap-1.5 text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
-              <Calendar className="h-3.5 w-3.5 text-forest" />
-              {format(new Date(competition.startDate), 'dd MMM yyyy')} -{' '}
-              {format(new Date(competition.endDate), 'dd MMM yyyy')}
-            </span>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-6 mt-6 text-sm">
+              <span className="flex items-center gap-1.5 text-gold font-black uppercase tracking-widest text-[10px]">
+                <Trophy className="h-4 w-4" />
+                {competition.prize}
+              </span>
+              <span className="flex items-center gap-1.5 text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                <Calendar className="h-3.5 w-3.5 text-forest" />
+                {format(new Date(competition.startDate), 'dd MMM yyyy')} -{' '}
+                {format(new Date(competition.endDate), 'dd MMM yyyy')}
+              </span>
+              <span className="flex items-center gap-1.5 text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
+                <MapPin className="h-3.5 w-3.5 text-forest" />
+                {competition.location || 'Africa Hub'}
+              </span>
               <span className="flex items-center gap-1.5 text-muted-foreground font-bold uppercase tracking-widest text-[10px]">
                 <Users className="h-3.5 w-3.5 text-forest" />
                 {competition._count.entries} entries
               </span>
-              {isActive && (
+            </div>
+
+            {(!isEnded) && (
+              <div className="mt-8">
                 <Button
                   onClick={() => {
                     const el = document.getElementById('entry-form');
                     el?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  size="sm"
-                  className="bg-forest hover:bg-forest-dark text-white rounded-full px-4 h-7 text-[9px] font-black uppercase tracking-widest shadow-lg shadow-forest/20 ml-2"
+                  size="lg"
+                  className="bg-gold hover:bg-gold-dark text-bark font-black rounded-2xl px-10 h-16 text-sm uppercase tracking-[0.2em] shadow-2xl shadow-gold/30 group transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  <Send className="mr-1.5 h-3 w-3" />
-                  Enter Now
+                  <Send className="mr-3 h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  Submit Your Entry
                 </Button>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
 
           {/* Recap / Results Section */}
           {(competition.recap || competition.winnerName) && status === 'ended' && (
@@ -329,10 +408,73 @@ export function CompetitionDetail({ id }: { id: string }) {
           </div>
         )}
 
+        {/* Enter Competition Button - More Prominent */}
+        {isActive && (
+          <div className="my-12 text-center">
+            <Button
+              onClick={() => {
+                const el = document.getElementById('entry-form');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              size="lg"
+              className="bg-forest hover:bg-forest-dark text-white rounded-2xl px-12 h-16 text-lg font-black uppercase tracking-widest shadow-xl shadow-forest/20 group"
+            >
+              <Send className="mr-3 h-6 w-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              Enter Competition Now
+            </Button>
+          </div>
+        )}
+
+        {/* Linked Events */}
+        {linkedEvents.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
+              <Calendar className="h-6 w-6 text-forest" />
+              Linked Events
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {linkedEvents.map((event) => (
+                <Card key={event.id} className="overflow-hidden border border-border/50 shadow-sm hover:shadow-xl transition-all rounded-2xl group">
+                  <div className="relative h-40 overflow-hidden">
+                    {event.image ? (
+                      <img src={event.image} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full bg-forest/5 flex items-center justify-center">
+                        <Calendar className="h-12 w-12 text-forest/20" />
+                      </div>
+                    )}
+                  </div>
+                  <CardContent className="p-5">
+                    <h3 className="font-bold text-lg mb-2 line-clamp-1">{event.title}</h3>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 font-bold uppercase tracking-widest">
+                      <Clock className="h-3 w-3 text-forest" />
+                      {format(new Date(event.date), 'dd MMM yyyy')}
+                      {event.location && (
+                        <span className="flex items-center gap-1 ml-2">
+                          <MapPin className="h-3 w-3 text-forest" />
+                          {event.location}
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRegisterEvent(event.id)}
+                      className="w-full rounded-xl border-forest/20 text-forest hover:bg-forest hover:text-white"
+                    >
+                      Register for Event
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Separator className="my-10" />
 
         {/* Entry Form */}
-        {isActive ? (
+        {!isEnded ? (
           session ? (
             <Card id="entry-form" className="mb-10 scroll-mt-24 border-2 border-forest/20 shadow-2xl shadow-forest/5 rounded-[2.5rem] overflow-hidden">
               <CardContent className="p-6">
@@ -341,54 +483,64 @@ export function CompetitionDetail({ id }: { id: string }) {
                   Submit Your Entry
                 </h2>
                 <form onSubmit={handleSubmitEntry} className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Your Entry *{' '}
-                      <span className="text-muted-foreground font-normal">
-                        ({competition.entryType})
-                      </span>
-                    </label>
-                    <Textarea
-                      placeholder={
-                        competition.entryType === 'story'
-                          ? 'Write your environmental story...'
-                          : competition.entryType === 'photo'
-                          ? 'Describe your photo entry...'
-                          : 'Enter your response...'
-                      }
-                      value={entryContent}
-                      onChange={(e) => setEntryContent(e.target.value)}
-                      rows={6}
-                      required
-                    />
-                  </div>
-                  {(competition.entryType === 'photo' ||
-                    competition.entryType === 'other') && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-1.5">
-                        <ImageIcon className="h-3.5 w-3.5" />
-                        Image URL (optional)
-                      </label>
+                      <label className="text-sm font-medium">Full Name *</label>
                       <Input
-                        placeholder="https://example.com/your-image.jpg"
-                        value={entryImageUrl}
-                        onChange={(e) => setEntryImageUrl(e.target.value)}
+                        placeholder="Your full name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
                       />
                     </div>
-                  )}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phone Number *</label>
+                      <Input
+                        placeholder="+254..."
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Age *</label>
+                      <Input
+                        type="number"
+                        placeholder="e.g. 25"
+                        value={age}
+                        onChange={(e) => setAge(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Gender *</label>
+                      <Select value={gender} onValueChange={setGender} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <Button
                     type="submit"
-                    disabled={submitting || !entryContent.trim()}
-                    className="bg-forest hover:bg-forest-dark text-primary-foreground"
+                    disabled={submitting}
+                    className="w-full mt-4 bg-forest hover:bg-forest-dark text-white rounded-xl h-12 flex items-center justify-center gap-2"
                   >
-                    <Send className="mr-2 h-4 w-4" />
-                    {submitting ? 'Submitting...' : 'Submit Entry'}
+                    <CheckCircle2 className="h-5 w-5" />
+                    {submitting ? 'Registering...' : 'Register for Challenge & Event'}
                   </Button>
                 </form>
               </CardContent>
             </Card>
           ) : (
-            <Card className="mb-10">
+            <Card id="entry-form" className="mb-10">
               <CardContent className="p-6 text-center">
                 <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                 <h3 className="font-semibold">Log in to Enter</h3>
@@ -442,15 +594,14 @@ export function CompetitionDetail({ id }: { id: string }) {
                           </span>
                           <Badge
                             variant="secondary"
-                            className={`text-xs ${
-                              entry.status === 'winner'
+                            className={`text-xs ${entry.status === 'winner'
                                 ? 'bg-sunlight/20 text-earth'
                                 : entry.status === 'approved'
-                                ? 'bg-green-500/10 text-green-600'
-                                : entry.status === 'rejected'
-                                ? 'bg-red-500/10 text-red-600'
-                                : ''
-                            }`}
+                                  ? 'bg-green-500/10 text-green-600'
+                                  : entry.status === 'rejected'
+                                    ? 'bg-red-500/10 text-red-600'
+                                    : ''
+                              }`}
                           >
                             {entry.status === 'winner' && 'Winner'}
                             {entry.status === 'approved' && 'Approved'}

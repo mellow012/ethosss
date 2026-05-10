@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { startTransition } from 'react'
+import { EditProfileDialog } from './EditProfileDialog'
 
 interface Booking {
   id: string
@@ -74,6 +75,8 @@ export function UserDashboard() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
+  const [fullUser, setFullUser] = useState<any>(null)
 
   const userId = (session?.user as any)?.id
 
@@ -82,16 +85,19 @@ export function UserDashboard() {
     setLoading(true)
 
     try {
-      const [entriesRes, bookingsRes] = await Promise.all([
+      const [entriesRes, bookingsRes, profileRes] = await Promise.all([
         fetch(`/api/entries?userId=${userId}`),
-        fetch('/api/events/register')
+        fetch('/api/events/register'),
+        fetch('/api/profile')
       ])
 
       const entriesData = await entriesRes.json()
       const bookingsData = await bookingsRes.json()
+      const profileData = await profileRes.json()
 
       setEntries(entriesData.entries || [])
       setBookings(bookingsData.bookings || [])
+      setFullUser(profileData.user || null)
     } catch (err) {
       toast.error('Failed to load dashboard data')
     } finally {
@@ -186,7 +192,11 @@ export function UserDashboard() {
                 <p className="text-white/80 text-lg font-medium">{userEmail}</p>
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl" onClick={() => router.push('/settings')}>
+                <Button 
+                  variant="outline" 
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl" 
+                  onClick={() => setIsEditProfileOpen(true)}
+                >
                   Edit Profile
                 </Button>
               </div>
@@ -343,6 +353,13 @@ export function UserDashboard() {
           </Card>
         </div>
       </div>
+
+      <EditProfileDialog
+        isOpen={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+        onUpdate={fetchData}
+        user={fullUser || { name: userName, image: userImage }}
+      />
     </motion.div>
   )
 }

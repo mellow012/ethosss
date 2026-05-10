@@ -140,7 +140,7 @@ export default function StoryDetailPage() {
                 <div className="space-y-6">
                   <h3 className="text-2xl font-bold text-foreground">Our Journey & Impact</h3>
                   <p className="text-muted-foreground text-lg leading-relaxed">
-                    This business was founded with a clear vision to address environmental challenges in Southern Africa. 
+                    This business was founded with a clear vision to address environmental challenges in Africa. 
                     Through innovation and dedication, they have managed to create a sustainable model that benefits both the community and the planet.
                   </p>
                   <p className="text-muted-foreground text-lg leading-relaxed">

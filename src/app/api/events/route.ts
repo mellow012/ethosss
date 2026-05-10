@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const competitionId = searchParams.get("competitionId");
     const limit = parseInt(searchParams.get("limit") || "10");
     const upcomingOnly = searchParams.get("upcoming") === "true";
     const all = searchParams.get("all") === "true";
@@ -14,6 +15,10 @@ export async function GET(request: NextRequest) {
     let query = supabaseAdmin
       .from('Event')
       .select('*');
+    
+    if (competitionId) {
+      query = query.eq('competitionId', competitionId);
+    }
     
     if (!all) {
       query = query.eq('isActive', true);

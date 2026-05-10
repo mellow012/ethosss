@@ -179,6 +179,9 @@ model Competition {
   winnerId       String?            // User ID of the winner
   currentRound   Int                @default(1)
   totalRounds    Int                @default(1)
+  location       String?
+  recap          String?
+  winnerName     String?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   entries        CompetitionEntry[]

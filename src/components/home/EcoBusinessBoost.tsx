@@ -39,7 +39,7 @@ export function EcoBusinessBoost() {
               
               <p className="text-white/70 text-lg md:text-xl leading-relaxed mb-10 max-w-xl">
                 Fuel your environmental innovation. We provide the resources, mentorship, and 
-                strategic capital needed to scale your business impact across Southern Africa.
+                strategic capital needed to scale your business impact across Africa.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">

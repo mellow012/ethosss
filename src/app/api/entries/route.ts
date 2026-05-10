@@ -101,9 +101,6 @@ export async function POST(request: NextRequest) {
 
     // Check dates
     const now = new Date();
-    if (now < new Date(competition.startDate)) {
-      return NextResponse.json({ error: "Competition has not started yet" }, { status: 400 });
-    }
     if (now > new Date(competition.endDate)) {
       return NextResponse.json({ error: "Competition has ended" }, { status: 400 });
     }

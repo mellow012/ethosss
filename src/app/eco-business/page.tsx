@@ -28,7 +28,7 @@ export default function EcoBusinessPage() {
             </h1>
             <p className="text-white/70 text-lg md:text-xl leading-relaxed mb-12 max-w-3xl mx-auto">
               Fueling environmental innovation with the strategic capital, expert mentorship, 
-              and regional networks needed to scale impact across Southern Africa.
+              and regional networks needed to scale impact across Africa.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <Button size="lg" className="bg-gold hover:bg-gold-dark text-bark font-bold h-16 px-10 rounded-2xl group text-lg">
@@ -70,7 +70,7 @@ export default function EcoBusinessPage() {
               {
                 icon: Globe,
                 title: 'Regional Networking',
-                desc: 'Access to cross-border markets and partnerships across Southern Africa, from Zambia to Malawi.',
+                desc: 'Access to cross-border markets and partnerships across Africa, from Kenya to Malawi.',
                 color: 'bg-amber-500/10 text-amber-600'
               }
             ].map((pillar, i) => (

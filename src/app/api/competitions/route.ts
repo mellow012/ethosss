@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
       totalRounds,
       recap,
       winnerName,
+      location,
     } = body;
 
     if (!title || !slug || !description || !prize || !startDate || !endDate) {
@@ -112,6 +113,7 @@ export async function POST(request: NextRequest) {
         totalRounds: totalRounds ?? 1,
         recap,
         winnerName,
+        location,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
@@ -160,6 +162,7 @@ export async function PUT(request: NextRequest) {
       totalRounds,
       recap,
       winnerName,
+      location,
     } = body;
 
     if (!id) {
@@ -182,6 +185,7 @@ export async function PUT(request: NextRequest) {
     if (totalRounds !== undefined) updateData.totalRounds = totalRounds;
     if (recap !== undefined) updateData.recap = recap;
     if (winnerName !== undefined) updateData.winnerName = winnerName;
+    if (location !== undefined) updateData.location = location;
     updateData.updatedAt = new Date().toISOString();
 
     const { data: competition, error } = await supabaseAdmin

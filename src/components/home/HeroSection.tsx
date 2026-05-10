@@ -64,9 +64,9 @@ export function HeroSection() {
   }
 
   const content = {
-    subtitle: settings.hero_subtitle || 'Sustainable Travel & Economy Across Southern Africa',
+    subtitle: settings.hero_subtitle || 'See the World, Save the Planet',
     title: settings.hero_title || 'Ethosss — Empowering Innovation',
-    description: settings.hero_description || 'We are a social enterprise operating across Southern Africa, committed to empowering young people through the economy, eco-friendly tourism, and innovation.'
+    description: settings.hero_description || 'We are a social enterprise operating across Africa, committed to empowering young people through the economy, eco-friendly tourism, and innovation.'
   }
 
   return (
@@ -146,6 +146,15 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
         >
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-[10px] sm:text-xs text-gold font-black uppercase tracking-[0.3em] mb-4"
+          >
+            Ethical Transformation Holistic Social Support Service
+          </motion.p>
+
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}

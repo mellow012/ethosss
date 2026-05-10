@@ -34,7 +34,7 @@ export async function GET() {
           return { ...stat, value: "10000+" };
         case "Active Members":
           return { ...stat, value: "7" };
-        case "UK Regions":
+        case "Active Regions":
           return { ...stat, value: allRegions.size.toString() };
         case "Eco Hotels":
           return { ...stat, value: (hotelCount || 0).toString() };

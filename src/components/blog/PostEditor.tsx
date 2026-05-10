@@ -208,7 +208,7 @@ export function PostEditor() {
               <Label htmlFor="title" className="text-lg font-bold">Post Title</Label>
               <Input
                 id="title"
-                placeholder="The Future of Eco-Tourism in the UK"
+                placeholder="The Future of Eco-Tourism in Africa"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="text-xl h-14 font-bold border-none bg-muted/30 focus-visible:ring-forest shadow-sm"

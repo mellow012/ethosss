@@ -26,7 +26,7 @@ const iconMap: Record<string, React.ElementType> = {
 const defaultStats: ImpactStat[] = [
   { id: '1', label: 'Trees Planted', value: '10000+', icon: 'tree', order: 0 },
   { id: '2', label: 'Active Members', value: '7', icon: 'users', order: 1 },
-  { id: '3', label: 'UK Regions', value: '15', icon: 'globe', order: 2 },
+  { id: '3', label: 'Active Regions', value: '15', icon: 'globe', order: 2 },
   { id: '4', label: 'Eco Hotels', value: '42', icon: 'leaf', order: 3 },
   { id: '5', label: 'Competitions Won', value: '180', icon: 'award', order: 4 },
   { id: '6', label: 'Volunteer Hours', value: '12000', icon: 'heart', order: 5 },
@@ -80,7 +80,7 @@ export function ImpactStats() {
   }, [])
 
   return (
-    <section className="py-20 bg-leaf-pattern">
+    <section className="pt-24 pb-12 bg-leaf-pattern">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -94,7 +94,7 @@ export function ImpactStats() {
           </h2>
           <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
             Together with our community, we are making a measurable difference
-            for the environment across Southern Africa.
+            for the environment across Africa.
           </p>
         </motion.div>
 

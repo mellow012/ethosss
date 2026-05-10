@@ -152,6 +152,13 @@ export function Navbar() {
               </Button>
             )}
 
+            <Button
+              onClick={() => handleNav('/get-involved')}
+              className="hidden lg:flex bg-gold hover:bg-gold-dark text-bark font-bold rounded-xl h-9 px-4 text-xs uppercase tracking-wider"
+            >
+              Get Involved
+            </Button>
+
             {/* Auth Buttons / Avatar */}
             {session ? (
               <DropdownMenu>
@@ -256,7 +263,14 @@ export function Navbar() {
                   </nav>
 
                   {/* Mobile Auth */}
-                  <div className="border-t border-border pt-4">
+                  <div className="border-t border-border pt-4 flex flex-col gap-4">
+                    <Button
+                      onClick={() => handleNav('/get-involved')}
+                      className="w-full bg-gold hover:bg-gold-dark text-bark font-bold"
+                    >
+                      Get Involved
+                    </Button>
+                    
                     {session ? (
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-3 px-4 py-2">

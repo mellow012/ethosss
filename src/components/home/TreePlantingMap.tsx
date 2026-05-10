@@ -64,9 +64,9 @@ function MapInner({ sites }: { sites: TreePlantingSite[] }) {
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return
 
-    // Initialize map centered on Southern Africa (Malawi area)
+    // Initialize map centered on Kenya (Nairobi area)
     const map = L.map(mapRef.current, {
-      center: [-13.25, 34.30],
+      center: [-1.29, 36.82],
       zoom: 5,
       zoomControl: false,
       scrollWheelZoom: true,
@@ -157,54 +157,9 @@ export function TreePlantingMap() {
   const activeSites = getActiveSites(sites)
 
   return (
-    <section className="py-16 md:py-24 bg-background">
+    <section className="pb-24 pt-0 bg-leaf-pattern">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-50px' }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-10"
-        >
-          <div className="inline-flex items-center gap-2 bg-forest/10 dark:bg-forest/20 rounded-full px-4 py-1.5 mb-4">
-            <MapPin className="h-4 w-4 text-forest" />
-            <span className="text-sm font-medium text-forest dark:text-forest-light">Our Impact</span>
-          </div>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-            Where We Plant{' '}
-            <span className="text-gradient-green">Trees</span>
-          </h2>
-          <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
-            Explore our tree planting sites in Malawi and globally. Each marker represents a community-driven
-            reforestation project — click to learn more about the species, impact, and how you can get involved.
-          </p>
-        </motion.div>
 
-        {/* Stats Row */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-50px' }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8"
-        >
-          {[
-            { label: 'Trees Planted', value: totalTrees.toLocaleString(), accent: 'bg-forest' },
-            { label: 'Planting Sites', value: sites.length.toString(), accent: 'bg-moss' },
-            { label: 'Active Sites', value: activeSites.toString(), accent: 'bg-gold' },
-            { label: 'Active Regions', value: '10+', accent: 'bg-forest-light' },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-card border border-border rounded-xl p-4 text-center hover:shadow-md transition-shadow"
-            >
-              <div className={`w-10 h-1 ${stat.accent} rounded-full mx-auto mb-2`} />
-              <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
-            </div>
-          ))}
-        </motion.div>
 
         {/* Legend */}
         <div className="flex flex-wrap items-center justify-center gap-5 mb-5 text-sm text-muted-foreground">

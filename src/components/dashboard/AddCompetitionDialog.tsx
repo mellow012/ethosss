@@ -55,6 +55,7 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
     totalRounds: 1,
     recap: '',
     winnerName: '',
+    location: '',
   })
 
   const [rounds, setRounds] = useState<{ title: string; objective: string; isFinal: boolean }[]>([
@@ -79,6 +80,7 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
         totalRounds: editingCompetition.totalRounds || 1,
         recap: editingCompetition.recap || '',
         winnerName: editingCompetition.winnerName || '',
+        location: editingCompetition.location || '',
       })
     }
   }, [editingCompetition])
@@ -135,6 +137,7 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
           totalRounds: 1,
           recap: '',
           winnerName: '',
+          location: '',
         })
         setRounds([{ title: 'Round 1', objective: '', isFinal: true }])
       } else {
@@ -218,15 +221,24 @@ export function AddCompetitionDialog({ onSuccess, editingCompetition, open: exte
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="comp-prize">Prize *</Label>
+              <Label htmlFor="comp-location">Location</Label>
               <Input
-                id="comp-prize"
-                placeholder="e.g. £500 Eco-Voucher"
-                value={formData.prize}
-                onChange={(e) => setFormData({ ...formData, prize: e.target.value })}
-                required
+                id="comp-location"
+                placeholder="e.g. Nairobi, Kenya"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="comp-prize">Prize *</Label>
+            <Input
+              id="comp-prize"
+              placeholder="e.g. £500 Eco-Voucher"
+              value={formData.prize}
+              onChange={(e) => setFormData({ ...formData, prize: e.target.value })}
+              required
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
