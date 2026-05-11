@@ -97,6 +97,8 @@ import { AddContentDialog } from './AddPostDialog'
 import { AddSuccessStoryDialog } from './AddSuccessStoryDialog'
 import { AddMediaDialog } from './AddMediaDialog'
 import { SettingsTab } from './SettingsTab'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 
 
 
@@ -209,6 +211,15 @@ export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview')
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Handle deep-linking from notifications
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const tab = params.get('tab')
+    if (tab && ['overview', 'posts', 'hotels', 'competitions', 'entries', 'events', 'users', 'sites', 'success-stories', 'media', 'settings'].includes(tab)) {
+      setActiveTab(tab)
+    }
+  }, [])
+
   // Data
   const [posts, setPosts] = useState<Post[]>([])
   const [events, setEvents] = useState<any[]>([])
@@ -240,6 +251,8 @@ export function AdminDashboard() {
   const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null)
   const [editingStory, setEditingStory] = useState<SuccessStory | null>(null)
   const [storyEditOpen, setStoryEditOpen] = useState(false)
+  const [editingMedia, setEditingMedia] = useState<MediaItem | null>(null)
+  const [mediaEditOpen, setMediaEditOpen] = useState(false)
 
   // Entry review dialog
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
@@ -251,6 +264,10 @@ export function AdminDashboard() {
   const [roleUser, setRoleUser] = useState<UserItem | null>(null)
   const [newRole, setNewRole] = useState('')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  // Export List Dialog
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [exportData, setExportData] = useState<{ title: string; names: string[] } | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
@@ -602,7 +619,17 @@ export function AdminDashboard() {
               />
             )}
             {activeTab === 'media' && (
-              <AddMediaDialog onSuccess={fetchData} />
+              <>
+                <AddMediaDialog onSuccess={fetchData} />
+                {editingMedia && (
+                  <AddMediaDialog 
+                    open={mediaEditOpen} 
+                    onOpenChange={setMediaEditOpen} 
+                    editingItem={editingMedia} 
+                    onSuccess={() => { fetchData(); setEditingMedia(null); setMediaEditOpen(false); }} 
+                  />
+                )}
+              </>
             )}
           </div>
         </header>
@@ -973,8 +1000,25 @@ export function AdminDashboard() {
                             </div>
                             <Separator className="my-2" />
                             <div className="flex gap-2">
-                              <Button className="flex-1 bg-forest/10 hover:bg-forest/20 text-forest border-none shadow-none font-bold" onClick={() => setActiveTab('entries')}>
+                              <Button 
+                                className="flex-1 bg-forest/10 hover:bg-forest/20 text-forest border-none shadow-none font-bold" 
+                                onClick={() => setActiveTab('entries')}
+                              >
                                 Review Entries
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="border-forest/30 text-forest hover:bg-forest/10 font-bold"
+                                onClick={() => {
+                                  const compEntries = entries.filter(e => e.competition.title === comp.title);
+                                  setExportData({
+                                    title: `Participant List: ${comp.title}`,
+                                    names: compEntries.map(e => e.user.name || 'Anonymous')
+                                  });
+                                  setExportDialogOpen(true);
+                                }}
+                              >
+                                Export
                               </Button>
                               {comp.isActive && (comp as any).conditionType === 'rounds' && (comp as any).totalRounds > 1 && (
                                 <Button
@@ -1025,7 +1069,7 @@ export function AdminDashboard() {
                             <div className="flex items-start justify-between gap-4 mb-4">
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-bark overflow-hidden">
-                                  {entry.user.image ? <img src={entry.user.image} className="w-full h-full object-cover" /> : entry.user.name.charAt(0)}
+                                  {entry.user.image ? <img src={entry.user.image} className="w-full h-full object-cover" /> : (entry.user.name?.charAt(0) || 'U')}
                                 </div>
                                 <div>
                                   <h4 className="font-bold text-sm leading-tight">{entry.user.name}</h4>
@@ -1067,7 +1111,27 @@ export function AdminDashboard() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xl font-bold">Event Registrations</h3>
-                    <Badge variant="outline">{eventRegistrations.length} Bookings</Badge>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-forest/30 text-forest font-bold h-8"
+                        onClick={() => {
+                          // Group names by event
+                          const events = Array.from(new Set(eventRegistrations.map(r => r.event?.title || 'Unknown Event')));
+                          const currentEvent = events[0] || 'Events';
+                          const names = eventRegistrations.map(r => r.fullName || r.user?.name || 'Anonymous');
+                          setExportData({
+                            title: `Event Participants`,
+                            names: names
+                          });
+                          setExportDialogOpen(true);
+                        }}
+                      >
+                        Export All Names
+                      </Button>
+                      <Badge variant="outline">{eventRegistrations.length} Bookings</Badge>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {loading ? (
@@ -1303,7 +1367,15 @@ export function AdminDashboard() {
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                               alt={m.title}
                             />
-                            <div className="absolute top-2 right-2">
+                            <div className="absolute top-2 right-2 flex gap-1">
+                              <Button 
+                                variant="secondary" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm"
+                                onClick={() => { setEditingMedia(m); setMediaEditOpen(true); }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
                               <Button 
                                 variant="destructive" 
                                 size="icon" 
@@ -1412,6 +1484,128 @@ export function AdminDashboard() {
         <Button variant="outline" onClick={() => setRoleDialogOpen(false)}>Cancel</Button>
         <Button onClick={handleRoleChange} disabled={actionLoading === 'role'} className="bg-forest text-primary-foreground">Update Role</Button>
       </DialogFooter>
+    </DialogContent>
+  </Dialog>
+  {/* Export Dialog */}
+  <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+    <DialogContent className="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle>Export Participant List</DialogTitle>
+        <DialogDescription>
+          Generate a PDF or image of the participants for announcements or records.
+        </DialogDescription>
+      </DialogHeader>
+      
+      {exportData && (
+        <div className="space-y-6">
+          <div 
+            id="export-container" 
+            className="p-8 bg-white rounded-2xl"
+            style={{ 
+              minHeight: '300px',
+              border: '4px solid hsl(145, 45%, 35%)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              color: 'hsl(50, 10%, 30%)'
+            }}
+          >
+            <div className="flex items-center gap-3 mb-6 pb-4" style={{ borderBottom: '2px solid rgba(22, 163, 74, 0.2)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: 'hsl(145, 45%, 35%)' }}>
+                <Leaf className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black uppercase tracking-tight" style={{ color: 'hsl(145, 45%, 35%)' }}>{exportData.title}</h3>
+                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Ethosss Movement Participation</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {exportData.names.length > 0 ? (
+                exportData.names.sort().map((name, i) => (
+                  <div key={i} className="flex items-center gap-3 py-1.5" style={{ borderBottom: '1px solid rgba(0, 0, 0, 0.05)' }}>
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black" style={{ backgroundColor: 'rgba(22, 163, 74, 0.1)', color: 'hsl(145, 45%, 35%)' }}>{i + 1}</span>
+                    <span className="text-sm font-bold">{name}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-10 text-muted-foreground font-medium italic">No participants yet.</p>
+              )}
+            </div>
+
+            <div className="mt-10 pt-4 text-center" style={{ borderTop: '2px solid rgba(22, 163, 74, 0.2)' }}>
+              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'hsl(145, 45%, 35%)' }}>www.ethosss.africa</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Button
+              className="bg-forest text-white font-bold gap-2"
+              onClick={async () => {
+                if (!exportData) return;
+                try {
+                  const element = document.getElementById('export-container');
+                  if (!element) {
+                    toast.error('Export container not found');
+                    return;
+                  }
+                  const canvas = await html2canvas(element, { 
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                  });
+                  const imgData = canvas.toDataURL('image/png');
+                  const link = document.createElement('a');
+                  link.href = imgData;
+                  link.download = `${exportData.title.replace(/\s+/g, '_')}.png`;
+                  link.click();
+                  toast.success('Image downloaded!');
+                } catch (err) {
+                  console.error('Export error:', err);
+                  toast.error('Failed to generate image');
+                }
+              }}
+            >
+              Download Image
+            </Button>
+            <Button
+              variant="outline"
+              className="border-forest text-forest font-bold gap-2"
+              onClick={async () => {
+                if (!exportData) return;
+                try {
+                  const element = document.getElementById('export-container');
+                  if (!element) {
+                    toast.error('Export container not found');
+                    return;
+                  }
+                  const canvas = await html2canvas(element, { 
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                  });
+                  const imgData = canvas.toDataURL('image/png');
+                  
+                  // Handle different jsPDF import styles
+                  const doc = new jsPDF('p', 'mm', 'a4');
+                  const imgProps = doc.getImageProperties(imgData);
+                  const pdfWidth = doc.internal.pageSize.getWidth();
+                  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                  
+                  doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                  doc.save(`${exportData.title.replace(/\s+/g, '_')}.pdf`);
+                  toast.success('PDF downloaded!');
+                } catch (err) {
+                  console.error('PDF Export error:', err);
+                  toast.error('Failed to generate PDF');
+                }
+              }}
+            >
+              Download PDF
+            </Button>
+          </div>
+        </div>
+      )}
     </DialogContent>
   </Dialog>
 </div>

@@ -8,21 +8,29 @@ datasource db {
 }
 
 model User {
-  id         String             @id @default(cuid())
-  email      String             @unique
-  name       String?
-  password   String?
-  image      String?
-  role       String             @default("user")
-  bio        String?
-  isVerified Boolean            @default(false)
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-  accounts   Account[]
-  comments   Comment[]
-  entries    CompetitionEntry[]
-  posts      Post[]
-  sessions   Session[]
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique
+  name                  String?
+  password              String?
+  image                 String?
+  role                  String                 @default("user")
+  bio                   String?
+  isVerified            Boolean                @default(false)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  accounts              Account[]
+  comments              Comment[]
+  entries               CompetitionEntry[]
+  posts                 Post[]
+  sessions              Session[]
+  memberships           Membership[]
+  postReactions         PostReaction[]
+  successStoryReactions SuccessStoryReaction[]
+  eventRegistrations    EventRegistration[]
+  involvements          Involvement[]
+  resetToken            String?                @unique
+  resetTokenExpiry      DateTime?
+  notifications         Notification[]
   
   @@index([createdAt])
 }
@@ -81,6 +89,7 @@ model Post {
   author      User      @relation(fields: [authorId], references: [id])
   category    Category? @relation(fields: [categoryId], references: [id])
   tags        PostTag[]
+  reactions   PostReaction[]
   
   @@index([createdAt])
 }
@@ -186,6 +195,7 @@ model Competition {
   updatedAt      DateTime           @updatedAt
   entries        CompetitionEntry[]
   rounds         CompetitionRound[]
+  events         Event[]
   
   @@index([isActive])
 }
@@ -242,17 +252,20 @@ model ImpactStat {
 }
 
 model Event {
-  id          String              @id @default(cuid())
-  title       String
-  description String
-  date        DateTime
-  location    String
-  image       String?
-  link        String?
-  isActive    Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  bookings    EventRegistration[]
+  id            String              @id @default(cuid())
+  title         String
+  description   String
+  date          DateTime
+  location      String
+  image         String?
+  link          String?
+  isActive      Boolean             @default(true)
+  recap         String?
+  competitionId String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  bookings      EventRegistration[]
+  competition   Competition?        @relation(fields: [competitionId], references: [id])
 }
 
 model EventRegistration {
@@ -346,6 +359,50 @@ model SuccessStory {
   featured     Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  reactions    SuccessStoryReaction[]
 
   @@index([featured])
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  userId    String
+  planId    String
+  status    String   @default("active")
+  startDate DateTime @default(now())
+  endDate   DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
+
+model Involvement {
+  id          String   @id @default(cuid())
+  userId      String?
+  type        String   
+  name        String
+  email       String
+  phone       String?
+  message     String?
+  skills      String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([type])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info") // 'info', 'success', 'warning', 'error'
+  isRead    Boolean  @default(false)
+  link      String?  // Optional link to redirect user
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
 }

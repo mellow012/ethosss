@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
+import { createNotification, notifyAdmins } from "@/lib/notifications";
 
 export async function GET(request: NextRequest) {
   try {
@@ -93,6 +94,35 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // Create Notification
+    try {
+      const { data: eventData } = await supabaseAdmin
+        .from('Event')
+        .select('title')
+        .eq('id', eventId)
+        .single();
+
+      if (eventData) {
+        await createNotification({
+          userId: (session.user as any).id,
+          title: 'Event Booking Confirmed',
+          message: `You have successfully booked a spot for: ${eventData.title}. We look forward to seeing you there!`,
+          type: 'success',
+          link: `/activities`
+        });
+
+        // Notify Admins
+        await notifyAdmins({
+          title: 'New Event Booking',
+          message: `${session.user.name || session.user.email} has registered for ${eventData.title}.`,
+          type: 'info',
+          link: `/admin?tab=entries`
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to send notification:", notifErr);
+    }
 
     return NextResponse.json({ registration });
   } catch (error: any) {

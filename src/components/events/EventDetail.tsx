@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Trophy,
+  Send,
+  Lock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -40,12 +42,30 @@ interface Event {
   competitionId: string | null
 }
 
+interface Competition {
+  id: string
+  title: string
+  slug: string
+  description: string
+  rules: string | null
+  prize: string
+  coverImage: string | null
+  startDate: string
+  endDate: string
+  isActive: boolean
+  entryType: string
+  location: string | null
+  _count?: { entries: number }
+}
+
 import { EventBookingDialog } from './EventBookingDialog'
 
 export function EventDetail({ id }: { id: string }) {
   const router = useRouter()
   const { data: session } = useSession()
   const [event, setEvent] = useState<Event | null>(null)
+  const [competition, setCompetition] = useState<Competition | null>(null)
+  const [hasEnteredCompetition, setHasEnteredCompetition] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isRegistered, setIsRegistered] = useState(false)
   const [bookingLoading, setBookingLoading] = useState(false)
@@ -61,6 +81,24 @@ export function EventDetail({ id }: { id: string }) {
         setEvent(found || null)
         if (found && session) {
           checkRegistration(found.id)
+        }
+        // Fetch linked competition if any
+        if (found?.competitionId) {
+          fetch(`/api/competitions/${found.competitionId}`)
+            .then(r => r.json())
+            .then(d => { if (d.competition) setCompetition(d.competition) })
+            .catch(() => {})
+          // Check if user already entered the competition
+          if (session?.user) {
+            fetch(`/api/entries?competitionId=${found.competitionId}`)
+              .then(r => r.json())
+              .then(d => {
+                const userId = (session.user as any)?.id
+                const myEntry = (d.entries || []).find((e: any) => e.user?.id === userId)
+                setHasEnteredCompetition(!!myEntry)
+              })
+              .catch(() => {})
+          }
         }
       })
       .catch(() => toast.error('Failed to load event'))
@@ -214,6 +252,94 @@ export function EventDetail({ id }: { id: string }) {
                 </h2>
                 <div className="prose prose-slate dark:prose-invert max-w-none text-foreground/80 leading-relaxed">
                   <ReactMarkdown>{event.recap}</ReactMarkdown>
+                </div>
+              </section>
+            )}
+
+            {/* Linked Competition Section */}
+            {competition && (
+              <section className="border border-gold/30 rounded-3xl overflow-hidden shadow-lg">
+                {/* Header image */}
+                <div className="relative h-52 w-full">
+                  {competition.coverImage ? (
+                    <img src={competition.coverImage} alt={competition.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-forest via-moss to-bark flex items-center justify-center">
+                      <Trophy className="h-20 w-20 text-white/20" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute top-4 left-4">
+                    <Badge className="bg-gold text-forest-dark border-none font-black uppercase tracking-wider text-xs px-3 py-1">
+                      🏆 Linked Competition
+                    </Badge>
+                  </div>
+                  <div className="absolute bottom-4 left-5 right-5">
+                    <h3 className="text-xl font-black text-white leading-tight">{competition.title}</h3>
+                    <p className="text-gold font-bold text-sm mt-1">{competition.prize}</p>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 bg-gold/5 space-y-4">
+                  <p className="text-muted-foreground text-sm leading-relaxed line-clamp-4">
+                    {competition.description}
+                  </p>
+
+                  {/* Meta info */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-background/60 rounded-xl p-3 border border-border/50">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Start Date</p>
+                      <p className="text-sm font-bold">{format(new Date(competition.startDate), 'dd MMM yyyy')}</p>
+                    </div>
+                    <div className="bg-background/60 rounded-xl p-3 border border-border/50">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">End Date</p>
+                      <p className="text-sm font-bold">{format(new Date(competition.endDate), 'dd MMM yyyy')}</p>
+                    </div>
+                    {competition.location && (
+                      <div className="col-span-2 bg-background/60 rounded-xl p-3 border border-border/50">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Location</p>
+                        <p className="text-sm font-bold flex items-center gap-1"><MapPin className="h-3 w-3 text-forest" />{competition.location}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-col gap-3 pt-2">
+                    {hasEnteredCompetition ? (
+                      <Button
+                        disabled
+                        className="w-full h-12 bg-green-500/10 text-green-600 border border-green-500/30 font-black rounded-xl cursor-not-allowed"
+                      >
+                        <CheckCircle2 className="mr-2 h-5 w-5" />
+                        Already Entered!
+                      </Button>
+                    ) : new Date() > new Date(competition.endDate) ? (
+                      <Button
+                        disabled
+                        className="w-full h-12 bg-muted text-muted-foreground font-black rounded-xl cursor-not-allowed"
+                      >
+                        <Lock className="mr-2 h-4 w-4" />
+                        Competition Ended
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => router.push(`/competitions/${competition.id}`)}
+                        className="w-full h-12 bg-gold hover:bg-gold-dark text-bark font-black rounded-xl shadow-lg shadow-gold/20 group"
+                      >
+                        <Send className="mr-2 h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                        Enter Competition
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push(`/competitions/${competition.id}`)}
+                      className="w-full border-forest/30 text-forest hover:bg-forest hover:text-white font-bold rounded-xl"
+                    >
+                      View Full Details
+                    </Button>
+                  </div>
                 </div>
               </section>
             )}

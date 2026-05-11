@@ -210,7 +210,7 @@ export function UserDashboard() {
             { label: 'Competition Entries', value: entries.length, icon: FileText, color: 'bg-forest/10 text-forest' },
             { label: 'Upcoming Events', value: upcomingEvents, icon: Ticket, color: 'bg-moss/10 text-moss' },
             { label: 'Eco-Challenges Won', value: wins, icon: Award, color: 'bg-sunlight/10 text-earth' },
-            { label: 'Trees Impacted', value: '150+', icon: Star, color: 'bg-blue-500/10 text-blue-600' },
+            { label: 'Total Impact Score', value: (entries.length * 10) + (bookings.length * 20), icon: Leaf, color: 'bg-blue-500/10 text-blue-600' },
           ].map((stat) => (
             <Card key={stat.label} className="border-none shadow-md hover:shadow-lg transition-all group">
               <CardContent className="p-6 flex items-center gap-4">
@@ -269,9 +269,12 @@ export function UserDashboard() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 mb-1">
                               <h4 className="font-bold text-sm truncate uppercase tracking-tight">{entry.competition.title}</h4>
-                              <Badge className={`${statusColors[entry.status]} border-none text-[9px] h-5 font-black uppercase`}>
-                                {entry.status}
-                              </Badge>
+                              <div className="flex gap-1">
+                                {entry.status === 'winner' && <Badge className="bg-sunlight text-earth text-[8px] h-4 font-black">WINNER 🏆</Badge>}
+                                <Badge className={`${statusColors[entry.status]} border-none text-[9px] h-5 font-black uppercase`}>
+                                  {entry.status}
+                                </Badge>
+                              </div>
                             </div>
                             <p className="text-xs text-muted-foreground line-clamp-1 mb-3">{entry.content}</p>
                             <div className="flex items-center gap-4">

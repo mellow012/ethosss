@@ -104,3 +104,43 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, title, url, type, category, description } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    const { data: item, error } = await supabaseAdmin
+      .from('Media')
+      .update({
+        title,
+        url,
+        type: type || 'image',
+        category: category || 'general',
+        description,
+        updatedAt: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ item });
+  } catch (error: any) {
+    console.error("Media PUT error:", error);
+    return NextResponse.json(
+      { error: "Failed to update media item" },
+      { status: 500 }
+    );
+  }
+}

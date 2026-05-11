@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET() {
   try {
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
     const { data: setting, error } = await supabaseAdmin
       .from('SiteSetting')
       .upsert({ 
+        id: uuidv4(),
         key, 
         value: String(value),
         updatedAt: new Date().toISOString()

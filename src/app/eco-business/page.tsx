@@ -1,11 +1,17 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Rocket, HandCoins, ArrowRight, TrendingUp, ShieldCheck, Target, Users, Leaf, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { EcoBusinessSuccess } from '@/components/home/EcoBusinessSuccess'
+import { JoinMovementModal, InvolvementType } from '@/components/home/JoinMovementModal'
+import { DonationModal } from '@/components/home/DonationModal'
 
 export default function EcoBusinessPage() {
+  const [involvementType, setInvolvementType] = useState<InvolvementType | null>(null)
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)
+
   return (
     <main className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -31,11 +37,19 @@ export default function EcoBusinessPage() {
               and regional networks needed to scale impact across Africa.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Button size="lg" className="bg-gold hover:bg-gold-dark text-bark font-bold h-16 px-10 rounded-2xl group text-lg">
+              <Button 
+                onClick={() => setInvolvementType('funding')}
+                size="lg" 
+                className="bg-gold hover:bg-gold-dark text-bark font-bold h-16 px-10 rounded-2xl group text-lg"
+              >
                 Apply for Funding
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 h-16 px-10 rounded-2xl text-lg">
+              <Button 
+                onClick={() => setInvolvementType('partner')}
+                size="lg" 
+                className="bg-transparent border-2 border-white/30 text-white hover:bg-white/10 h-16 px-10 rounded-2xl text-lg font-bold transition-all"
+              >
                 Partner With Us
               </Button>
             </div>
@@ -126,7 +140,11 @@ export default function EcoBusinessPage() {
                   <span className="font-medium">Empowers Local Youth</span>
                 </div>
               </div>
-              <Button size="lg" className="bg-gold hover:bg-gold-dark text-bark font-bold h-14 px-10 rounded-2xl w-full sm:w-auto">
+              <Button 
+                onClick={() => setIsDonationModalOpen(true)}
+                size="lg" 
+                className="bg-gold hover:bg-gold-dark text-bark font-bold h-14 px-10 rounded-2xl w-full sm:w-auto"
+              >
                 Make a Contribution
               </Button>
             </div>
@@ -145,6 +163,19 @@ export default function EcoBusinessPage() {
           </div>
         </div>
       </section>
+
+      {/* Modals */}
+      <DonationModal 
+        isOpen={isDonationModalOpen} 
+        onClose={() => setIsDonationModalOpen(false)} 
+      />
+      {involvementType && (
+        <JoinMovementModal
+          isOpen={!!involvementType}
+          onClose={() => setInvolvementType(null)}
+          type={involvementType}
+        />
+      )}
     </main>
   )
 }

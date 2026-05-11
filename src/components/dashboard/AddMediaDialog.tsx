@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, ImageIcon, Video, Link as LinkIcon, Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,12 +25,27 @@ import {
 import { toast } from 'sonner'
 import { MediaUpload } from '@/components/ui/media-upload'
 
-interface AddMediaDialogProps {
-  onSuccess?: () => void
+interface MediaItem {
+  id: string
+  title: string
+  url: string
+  type: string
+  category: string | null
+  description: string | null
 }
 
-export function AddMediaDialog({ onSuccess }: AddMediaDialogProps) {
-  const [open, setOpen] = useState(false)
+interface AddMediaDialogProps {
+  onSuccess?: () => void
+  editingItem?: MediaItem | null
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export function AddMediaDialog({ onSuccess, editingItem, open: controlledOpen, onOpenChange }: AddMediaDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setOpen = onOpenChange || setInternalOpen
+
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
@@ -39,6 +54,27 @@ export function AddMediaDialog({ onSuccess }: AddMediaDialogProps) {
     category: 'general',
     description: '',
   })
+
+  // Pre-fill when editing
+  useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        title: editingItem.title || '',
+        url: editingItem.url || '',
+        type: editingItem.type || 'image',
+        category: editingItem.category || 'general',
+        description: editingItem.description || '',
+      })
+    } else {
+      setFormData({
+        title: '',
+        url: '',
+        type: 'image',
+        category: 'general',
+        description: '',
+      })
+    }
+  }, [editingItem, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,25 +86,27 @@ export function AddMediaDialog({ onSuccess }: AddMediaDialogProps) {
     setLoading(true)
     try {
       const res = await fetch('/api/media', {
-        method: 'POST',
+        method: editingItem ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(editingItem ? { ...formData, id: editingItem.id } : formData),
       })
 
       if (res.ok) {
-        toast.success('Media added to hub successfully')
+        toast.success(editingItem ? 'Media updated successfully' : 'Media added to hub successfully')
         setOpen(false)
-        setFormData({
-          title: '',
-          url: '',
-          type: 'image',
-          category: 'general',
-          description: '',
-        })
+        if (!editingItem) {
+          setFormData({
+            title: '',
+            url: '',
+            type: 'image',
+            category: 'general',
+            description: '',
+          })
+        }
         onSuccess?.()
       } else {
         const error = await res.json()
-        throw new Error(error.error || 'Failed to add media')
+        throw new Error(error.error || `Failed to ${editingItem ? 'update' : 'add'} media`)
       }
     } catch (err: any) {
       toast.error(err.message)
@@ -79,25 +117,28 @@ export function AddMediaDialog({ onSuccess }: AddMediaDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-forest hover:bg-forest-dark text-white gap-2 rounded-full px-6">
-          <Plus className="h-4 w-4" />
-          Add Media
-        </Button>
-      </DialogTrigger>
+      {!controlledOpen && (
+        <DialogTrigger asChild>
+          <Button className="bg-forest hover:bg-forest-dark text-white gap-2 rounded-full px-6">
+            <Plus className="h-4 w-4" />
+            Add Media
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[500px] rounded-3xl p-0 overflow-hidden border-none shadow-2xl max-h-[95vh] flex flex-col">
         <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
           <div className="bg-forest p-8 text-white relative shrink-0">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-                <ImageIcon className="h-6 w-6" />
-                Add New Media
+                {editingItem ? <Save className="h-6 w-6" /> : <ImageIcon className="h-6 w-6" />}
+                {editingItem ? 'Edit Media' : 'Add New Media'}
               </DialogTitle>
               <DialogDescription className="text-forest-light/80">
-                Upload images or link videos to the organized Media Hub.
+                {editingItem ? 'Update the details for this media item.' : 'Upload images or link videos to the organized Media Hub.'}
               </DialogDescription>
             </DialogHeader>
           </div>
+...
 
           <div className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
             <div className="space-y-2">

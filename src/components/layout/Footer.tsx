@@ -22,6 +22,7 @@ import { toast } from 'sonner'
 
 const quickLinks = [
   { label: 'Home', href: '/' },
+  { label: 'Get Involved', href: '/get-involved' },
   { label: 'Blog', href: '/blog' },
   { label: 'Hotels', href: '/hotels' },
   { label: 'Competitions', href: '/competitions' },
@@ -117,29 +118,58 @@ export function Footer() {
             <div className="sm:col-span-2 lg:col-span-1">
               <Link
                 href="/"
-                className="flex items-center group mb-4"
+                className="flex items-center gap-3 group mb-6"
               >
                 <img
                   src={mounted && theme === 'dark' ? '/ethos-logo.jpeg' : '/ethos-white-logo.jpeg'}
                   alt="Ethosss"
-                  className="h-8 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                  className="h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
                 />
+                <span className="text-xl font-black tracking-tight text-foreground group-hover:text-forest transition-colors">
+                  Ethosss
+                </span>
               </Link>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Empowering innovation and sustainable travel.
                 A social enterprise committed to the economy, eco-friendly tourism, and innovation across Africa.
               </p>
-              <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                <p className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-forest" />
-                  Nairobi, Kenya Branch
-                </p>
-                <p className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-forest" />
-                  +254 712 345 678
-                </p>
-                <p className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-forest" />
+              <div className="mt-6 grid grid-cols-1 gap-6 text-sm text-muted-foreground">
+                <div className="space-y-2">
+                  <p className="flex items-center gap-2 font-black text-foreground uppercase tracking-widest text-[10px]">
+                    <MapPin className="h-3.5 w-3.5 text-forest" />
+                    Blantyre, Malawi
+                  </p>
+                  <div className="pl-5.5 space-y-1">
+                    <p className="flex items-center gap-2">
+                      <Phone className="h-3 w-3 text-forest/60" />
+                      +265 981 57 04 88
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Phone className="h-3 w-3 text-forest/60" />
+                      +265 883 33 58 39
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="flex items-center gap-2 font-black text-foreground uppercase tracking-widest text-[10px]">
+                    <MapPin className="h-3.5 w-3.5 text-forest" />
+                    Nairobi, Kenya
+                  </p>
+                  <div className="pl-5.5 space-y-1">
+                    <p className="flex items-center gap-2">
+                      <Phone className="h-3 w-3 text-forest/60" />
+                      +254 714 146 721
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Phone className="h-3 w-3 text-forest/60" />
+                      +254 722 678 513
+                    </p>
+                  </div>
+                </div>
+
+                <p className="flex items-center gap-2 pt-2 text-forest font-medium">
+                  <Mail className="h-4 w-4" />
                   contact.ethosss@gmail.com
                 </p>
               </div>

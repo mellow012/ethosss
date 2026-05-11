@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DonationModal } from '@/components/home/DonationModal'
 import { MembershipModal } from '@/components/home/MembershipModal'
+import { JoinMovementModal, InvolvementType } from '@/components/home/JoinMovementModal'
 
 const MEMBERSHIPS = [
   {
@@ -51,31 +52,39 @@ const MEMBERSHIPS = [
   }
 ]
 
-const WAYS_TO_HELP = [
+const WAYS_TO_HELP: { title: string; icon: React.ReactNode; description: string; action: string; type: InvolvementType }[] = [
   {
     title: 'Become an Activist',
     icon: <Zap className="h-6 w-6" />,
     description: 'Use your voice to spread awareness about climate change and social equity across Africa.',
-    action: 'Join the Movement'
+    action: 'Join the Movement',
+    type: 'activist'
   },
   {
     title: 'Volunteer',
     icon: <Users className="h-6 w-6" />,
     description: 'Join our local teams for clean-ups, tree planting, and community teaching events.',
-    action: 'Sign Up to Help'
+    action: 'Sign Up to Help',
+    type: 'volunteer'
   },
   {
     title: 'Join the Team',
     icon: <Briefcase className="h-6 w-6" />,
     description: 'Explore career opportunities and internships at Ethosss across our various hubs.',
-    action: 'View Openings'
+    action: 'View Openings',
+    type: 'team'
   }
 ]
 
 export default function GetInvolvedPage() {
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState(false)
+  const [involvementType, setInvolvementType] = useState<InvolvementType | null>(null)
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+
+  const handleInvolvementClick = (type: InvolvementType) => {
+    setInvolvementType(type)
+  }
 
   return (
     <main className="min-h-screen bg-background">
@@ -136,7 +145,11 @@ export default function GetInvolvedPage() {
                 <p className="text-muted-foreground leading-relaxed">
                   {way.description}
                 </p>
-                <Button variant="link" className="p-0 text-forest font-bold group">
+                <Button 
+                  variant="link" 
+                  className="p-0 text-forest font-bold group"
+                  onClick={() => handleInvolvementClick(way.type)}
+                >
                   {way.action} <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </div>
@@ -168,6 +181,13 @@ export default function GetInvolvedPage() {
         isOpen={isDonationModalOpen} 
         onClose={() => setIsDonationModalOpen(false)} 
       />
+      {involvementType && (
+        <JoinMovementModal
+          isOpen={!!involvementType}
+          onClose={() => setInvolvementType(null)}
+          type={involvementType}
+        />
+      )}
     </main>
   )
 }

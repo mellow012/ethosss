@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
+import { createNotification, notifyAdmins } from "@/lib/notifications";
+import { sendNotificationEmail } from "@/lib/nodemailer";
 
 export async function GET(request: NextRequest) {
   try {
@@ -142,6 +144,63 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) throw insertError;
+
+    // Send Email Notification to Admin
+    try {
+      const { data: compData } = await supabaseAdmin
+        .from('Competition')
+        .select('title')
+        .eq('id', competitionId)
+        .single();
+
+      if (compData) {
+        await sendNotificationEmail({
+          to: 'contact.ethosss@gmail.com',
+          subject: `New Competition Entry: ${compData.title}`,
+          text: `
+            A new entry has been submitted for the competition: ${compData.title}
+            
+            Details:
+            - User: ${session.user.name || session.user.email}
+            - Content: ${content.substring(0, 200)}...
+            - Image: ${imageUrl || 'None'}
+            
+            Please review this entry in the Admin Dashboard.
+          `,
+        });
+      }
+    } catch (emailErr) {
+      console.error("Failed to send admin email:", emailErr);
+    }
+
+    // Create Notification
+    try {
+      const { data: compData } = await supabaseAdmin
+        .from('Competition')
+        .select('title')
+        .eq('id', competitionId)
+        .single();
+
+      if (compData) {
+        await createNotification({
+          userId: currentUserId,
+          title: 'Competition Entry Received',
+          message: `Your entry for "${compData.title}" has been successfully submitted and is now under review. Good luck!`,
+          type: 'success',
+          link: `/activities`
+        });
+
+        // Notify Admins
+        await notifyAdmins({
+          title: 'New Competition Entry',
+          message: `${session.user.name || session.user.email} submitted an entry for ${compData.title}.`,
+          type: 'info',
+          link: `/admin?tab=entries`
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to send notification:", notifErr);
+    }
 
     // Automatic Winner Logic
     if (competition.conditionType === 'entry_count' && competition.conditionValue) {

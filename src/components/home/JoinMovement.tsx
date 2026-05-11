@@ -3,13 +3,13 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, Heart, Users, Leaf } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/lib/store'
+import { useRouter } from 'next/navigation'
 
 export function JoinMovement() {
-  const { setView } = useAppStore()
+  const router = useRouter()
 
   const handleJoin = () => {
-    setView('signup')
+    router.push('/get-involved')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 

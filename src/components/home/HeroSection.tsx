@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Leaf, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/lib/store'
+import { useRouter } from 'next/navigation'
 
 export function HeroSection() {
-  const { setView } = useAppStore()
+  const router = useRouter()
   const [settings, setSettings] = useState<any>({})
   const [currentSlide, setCurrentSlide] = useState(0)
 
@@ -54,12 +54,12 @@ export function HeroSection() {
   }, [displayImages])
 
   const handleExplore = () => {
-    setView('hotels')
+    router.push('/hotels')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleJoin = () => {
-    setView('signup')
+    router.push('/get-involved')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -152,7 +152,7 @@ export function HeroSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-[10px] sm:text-xs text-gold font-black uppercase tracking-[0.3em] mb-4"
           >
-            Ethical Transformation Holistic Social Support Service
+            Ethical Transformative Holistic Social Support Service
           </motion.p>
 
           <motion.div
@@ -192,12 +192,12 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-5"
+            className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5"
           >
             <Button
               size="lg"
               onClick={handleExplore}
-              className="bg-forest hover:bg-forest-dark text-primary-foreground px-10 py-7 text-lg font-semibold group rounded-2xl shadow-xl shadow-forest/20"
+              className="w-full sm:w-auto bg-forest hover:bg-forest-dark text-primary-foreground px-6 sm:px-10 py-5 sm:py-7 text-base sm:text-lg font-semibold group rounded-2xl shadow-xl shadow-forest/20"
             >
               Explore Eco-Tourism
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -206,7 +206,7 @@ export function HeroSection() {
               size="lg"
               variant="outline"
               onClick={handleJoin}
-              className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:text-white px-8 py-6 text-base"
+              className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:text-white px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base"
             >
               Join the Movement
             </Button>

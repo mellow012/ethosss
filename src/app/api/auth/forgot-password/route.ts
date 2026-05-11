@@ -1,35 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { v4 as uuidv4 } from 'uuid'
+import { sendResetPasswordEmail } from '@/lib/nodemailer'
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { email } = await request.json()
+    const { email } = await req.json()
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
-    // Check if user exists
-    const { data: user, error } = await supabaseAdmin
-      .from('User')
-      .select('id')
-      .eq('email', email)
-      .single()
+    const user = await db.user.findUnique({
+      where: { email }
+    })
 
-    if (error || !user) {
-      // For security reasons, don't reveal if user exists or not in the public response
-      // But we can return a success message regardless
-      return NextResponse.json({ success: true })
+    // We return success even if user not found for security (prevent email enumeration)
+    if (!user) {
+      return NextResponse.json({ message: 'If an account exists with this email, a reset link has been sent.' })
     }
 
-    // In a real app, you would:
-    // 1. Generate a reset token
-    // 2. Store it in the database with an expiration
-    // 3. Send an email with the link
+    const token = uuidv4()
+    const expiry = new Date(Date.now() + 3600000) // 1 hour
 
-    return NextResponse.json({ success: true })
-  } catch (error: any) {
+    await (db.user as any).update({
+      where: { email },
+      data: {
+        resetToken: token,
+        resetTokenExpiry: expiry
+      }
+    })
+
+    await sendResetPasswordEmail(email, token)
+
+    return NextResponse.json({ message: 'Reset link sent successfully.' })
+  } catch (error) {
     console.error('Forgot password error:', error)
-    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

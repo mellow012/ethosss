@@ -43,22 +43,23 @@ export async function POST(request: Request) {
     }
 
     const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-
+    
     // Generate unique filename with original extension or fallback to jpg
     const extension = file.name.split('.').pop() || 'jpg'
     const filename = `${uuidv4()}.${extension}`
     
+    console.log(`Uploading ${filename} (${file.size} bytes) to ethoss-media bucket...`);
+
     // Upload to Supabase Storage
     const { data, error } = await supabaseAdmin.storage
       .from('ethoss-media')
-      .upload(filename, buffer, {
+      .upload(filename, bytes, {
         contentType: file.type,
         upsert: false
       })
 
     if (error) {
-      console.error('Supabase upload error:', error)
+      console.error('Supabase storage upload error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 

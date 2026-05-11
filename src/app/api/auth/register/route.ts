@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
+import { createNotification, notifyAdmins } from '@/lib/notifications'
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,6 +53,27 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) throw error
+
+    // Create Welcome Notification
+    try {
+      await createNotification({
+        userId: user.id,
+        title: 'Welcome to Ethosss!',
+        message: `Hi ${user.name || 'there'}! We're thrilled to have you join our movement for a sustainable future.`,
+        type: 'success',
+        link: '/dashboard'
+      });
+
+      // Notify Admins
+      await notifyAdmins({
+        title: 'New User Joined',
+        message: `${user.name || user.email} just created an account.`,
+        type: 'info',
+        link: `/admin?tab=users`
+      });
+    } catch (notifErr) {
+      console.error("Failed to send signup notifications:", notifErr);
+    }
 
     return NextResponse.json({ user }, { status: 201 })
   } catch (error: any) {

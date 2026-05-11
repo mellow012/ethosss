@@ -9,7 +9,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Zap,
-  Globe
+  Globe,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -60,19 +61,33 @@ export function MembershipModal({ isOpen, onClose }: MembershipModalProps) {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [loading, setLoading] = useState(false)
 
-  const handleJoin = (planName: string) => {
+  const handleJoin = async (planId: string, planName: string) => {
     setLoading(true)
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/membership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId }),
+      })
+
+      if (res.ok) {
+        toast.success(`Welcome to the mission as a ${planName}!`)
+        onClose()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Failed to join membership')
+      }
+    } catch (error) {
+      toast.error('Something went wrong. Please try again.')
+    } finally {
       setLoading(false)
-      toast.success(`Welcome to the mission as a ${planName}!`)
-      onClose()
-    }, 1500)
+    }
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden border-none bg-white dark:bg-bark">
-        <div className="p-8 md:p-12">
+      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden border-none bg-white dark:bg-bark max-h-[90vh] flex flex-col">
+        <div className="p-8 md:p-12 overflow-y-auto custom-scrollbar">
           <div className="text-center mb-10 space-y-4">
             <DialogTitle className="text-3xl md:text-4xl font-black text-foreground">Choose Your Impact</DialogTitle>
             <DialogDescription className="text-muted-foreground text-lg">
@@ -127,7 +142,7 @@ export function MembershipModal({ isOpen, onClose }: MembershipModalProps) {
                 </div>
 
                 <Button 
-                  onClick={() => handleJoin(plan.name)}
+                  onClick={() => handleJoin(plan.id, plan.name)}
                   disabled={loading}
                   className={`w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] mt-8 transition-all ${
                     plan.featured 
@@ -135,7 +150,11 @@ export function MembershipModal({ isOpen, onClose }: MembershipModalProps) {
                       : 'bg-forest hover:bg-forest-dark text-white'
                   }`}
                 >
-                  Join Now
+                  {loading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    'Join Now'
+                  )}
                 </Button>
               </div>
             ))}

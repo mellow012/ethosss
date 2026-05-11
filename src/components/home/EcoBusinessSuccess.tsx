@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { ImagePreview } from '@/components/ui/image-preview'
+import { JoinMovementModal } from './JoinMovementModal'
 
 interface Story {
   id: string
@@ -22,6 +24,7 @@ export function EcoBusinessSuccess() {
   const [stories, setStories] = useState<Story[]>([])
   const [current, setCurrent] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [isStoryModalOpen, setIsStoryModalOpen] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -71,6 +74,7 @@ export function EcoBusinessSuccess() {
   if (stories.length === 0) return null
 
   return (
+    <>
     <section className="py-24 bg-muted/30 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
@@ -95,7 +99,7 @@ export function EcoBusinessSuccess() {
           <div className="flex flex-wrap gap-3 items-center">
             <Button 
               variant="outline"
-              onClick={() => router.push('/competitions')} // Placeholder or link to a submission page
+              onClick={() => setIsStoryModalOpen(true)}
               className="rounded-full border-forest text-forest hover:bg-forest hover:text-white font-bold px-6"
             >
               Share Your Story
@@ -132,7 +136,7 @@ export function EcoBusinessSuccess() {
               className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
             >
               <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden shadow-2xl group">
-                <img 
+                <ImagePreview 
                   src={stories[current].image || 'https://images.unsplash.com/photo-1518005020251-58296d8f8d60?w=800'} 
                   alt={stories[current].businessName} 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
@@ -203,6 +207,12 @@ export function EcoBusinessSuccess() {
         </div>
       </div>
     </section>
+    <JoinMovementModal 
+      isOpen={isStoryModalOpen} 
+      onClose={() => setIsStoryModalOpen(false)} 
+      type="story" 
+    />
+  </>
   )
 }
 
